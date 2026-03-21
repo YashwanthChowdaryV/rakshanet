@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import Navbar from "../../components/Navbar";
+
 import api from "../../services/api";
 
 const CaseManagement = () => {
@@ -20,7 +20,9 @@ const CaseManagement = () => {
         high: 0,
         medium: 0,
         low: 0,
+        review: 0,
         resolved: 0,
+        escalated: 0,
         inProgress: 0,
         womenCases: 0,
         convictionRate: 92,
@@ -35,8 +37,13 @@ const CaseManagement = () => {
     const fetchCases = async () => {
         try {
             setLoading(true);
-            const res = await api.get("/cases");
-            const fetchedCases = res.data.cases || [];
+            const [casesRes, statsRes] = await Promise.all([
+                api.get("/cases"),
+                api.get("/cases/stats")
+            ]);
+            
+            const fetchedCases = Array.isArray(casesRes.data) ? casesRes.data : (casesRes.data.cases || []);
+            const backendStats = statsRes.data;
             
             const mappedCases = fetchedCases.map((c: any) => ({
                 ...c,
@@ -46,11 +53,27 @@ const CaseManagement = () => {
                 anonymousAlias: c.victim?.alias,
                 assignedTo: c.assignedTo ? { name: c.assignedTo.name, _id: c.assignedTo._id } : null,
                 isWomen: false,
+                timeline: c.logs || [], // Map backend logs to frontend timeline
                 daysToResolve: c.status === "Resolved" ? Math.floor((new Date(c.updatedAt).getTime() - new Date(c.createdAt).getTime()) / (1000 * 3600 * 24)) : undefined,
             }));
             
             setCases(mappedCases);
             setFilteredCases(mappedCases);
+            
+            setStats(prev => ({
+                ...prev,
+                total: backendStats.totalCases,
+                new: backendStats.new,
+                review: backendStats.review,
+                resolved: backendStats.resolved,
+                escalated: backendStats.escalated,
+                // Recalculate severity from current cases if needed, or keep defaults
+                critical: fetchedCases.filter((c: any) => c.severity === "Critical").length,
+                high: fetchedCases.filter((c: any) => c.severity === "High").length,
+                medium: fetchedCases.filter((c: any) => c.severity === "Medium").length,
+                low: fetchedCases.filter((c: any) => c.severity === "Low").length,
+            }));
+
             setError(null);
         } catch (err: any) {
             console.error("Error fetching cases:", err);
@@ -137,6 +160,8 @@ const CaseManagement = () => {
                     medium: cases.filter(c => c.severity === "Medium").length,
                     low: cases.filter(c => c.severity === "Low").length,
                     resolved: resolved,
+                    review: cases.filter(c => c.status === "Under Review").length,
+                    escalated: cases.filter(c => c.status === "Escalated").length,
                     inProgress: cases.filter(c => c.status === "Under Review" || c.status === "Escalated").length,
                     womenCases: womenCases,
                     convictionRate: 92,
@@ -190,7 +215,7 @@ const CaseManagement = () => {
     if (error) {
         return (
             <>
-                <Navbar />
+                
                 <div style={{ paddingTop: "120px", textAlign: "center" }}>
                     <h2 style={{ color: "#dc2626" }}>⚠️ Error</h2>
                     <p>{error}</p>
@@ -217,7 +242,7 @@ const CaseManagement = () => {
     if (loading) {
         return (
             <>
-                <Navbar />
+                
                 <div style={{ paddingTop: "120px", textAlign: "center" }}>
                     <h2>Loading cases...</h2>
                 </div>
@@ -229,7 +254,7 @@ const CaseManagement = () => {
     if (cases.length === 0) {
         return (
             <>
-                <Navbar />
+                
                 <div style={{ paddingTop: "120px", textAlign: "center" }}>
                     <h2>📭 No cases found</h2>
                     <p>There are no cases to display at this time.</p>
@@ -240,7 +265,7 @@ const CaseManagement = () => {
 
     return (
         <>
-            <Navbar />
+            
 
             <style>
                 {`

@@ -13,6 +13,11 @@ const appointmentSchema = new mongoose.Schema(
             required: true,
         },
 
+        counselorId: {
+            type: mongoose.Schema.Types.ObjectId,
+            ref: "User",
+        },
+
         date: {
             type: String,
             required: true,

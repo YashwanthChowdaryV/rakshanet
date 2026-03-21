@@ -1,5 +1,28 @@
 const LegalConsultation = require("../models/LegalConsultation");
 const EscalationReport = require("../models/EscalationReport");
+const User = require("../models/User");
+
+exports.getLawyers = async (req, res) => {
+    try {
+        const lawyers = await User.find({ role: "lawyer" }).select("-passwordHash -refreshToken");
+        res.json(lawyers);
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ message: "Server Error" });
+    }
+};
+
+exports.getAssignedConsultations = async (req, res) => {
+    try {
+        const consultations = await LegalConsultation.find({ lawyerId: req.user.id })
+            .populate("student", "name email profile")
+            .sort({ createdAt: -1 });
+        res.json(consultations);
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ message: "Server Error" });
+    }
+};
 
 exports.requestConsultation = async (req, res) => {
     try {
@@ -14,6 +37,7 @@ exports.requestConsultation = async (req, res) => {
 
         const {
             lawyerName,
+            lawyerId,
             caseNumber,
             consultationType,
             preferredDate,
@@ -71,6 +95,7 @@ exports.requestConsultation = async (req, res) => {
         const consultation = await LegalConsultation.create({
             student: req.user.id,
             lawyerName,
+            lawyerId,
             caseNumber,
             consultationType: consultationType || "Free",
             preferredDate,

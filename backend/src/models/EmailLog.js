@@ -9,11 +9,21 @@ const emailLogSchema = new mongoose.Schema(
         },
         companyName: {
             type: String,
-            required: true,
         },
         hrEmail: {
             type: String,
+        },
+        recipient: {
+            type: String, // generalized to recipient
             required: true,
+        },
+        caseId: {
+            type: mongoose.Schema.Types.ObjectId,
+            ref: "Case"
+        },
+        retryCount: {
+            type: Number,
+            default: 0
         },
         subject: {
             type: String,

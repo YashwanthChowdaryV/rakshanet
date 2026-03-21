@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import Navbar from "../../components/Navbar";
+
 import api from "../../services/api";
 
 const TherapySupport = () => {
@@ -7,6 +7,7 @@ const TherapySupport = () => {
     const [showEmergency, setShowEmergency] = useState(false);
     const [showBooking, setShowBooking] = useState(false);
     const [selectedCounselor, setSelectedCounselor] = useState("");
+    const [selectedCounselorId, setSelectedCounselorId] = useState("");
     const [showConfirmation, setShowConfirmation] = useState(false);
 
     const [date, setDate] = useState("");
@@ -15,39 +16,31 @@ const TherapySupport = () => {
     const [reason, setReason] = useState("");
 
     const [appointments, setAppointments] = useState<any[]>([]);
+    const [sessions, setSessions] = useState<any[]>([]);
 
-    const counselors = [
-        {
-            name: "Dr. Priya Sharma",
-            title: "Licensed Clinical Psychologist",
-            specialization: "Trauma, Anxiety, Cyber Harassment",
-            rating: "4.9",
-            sessions: 42,
-            next: "Tomorrow",
-            availability: ["10:00 AM", "2:00 PM", "4:00 PM"],
-            image: "👩‍⚕️",
-        },
-        {
-            name: "Dr. Rajesh Kumar",
-            title: "Counseling Psychologist",
-            specialization: "Depression, Grief, Student Issues",
-            rating: "4.8",
-            sessions: 38,
-            next: "Today",
-            availability: ["11:00 AM", "3:00 PM", "5:00 PM"],
-            image: "👨‍⚕️",
-        },
-        {
-            name: "Ms. Anjali Mehta",
-            title: "Child & Adolescent Counselor",
-            specialization: "Students, Youth, Academic Stress",
-            rating: "4.7",
-            sessions: 29,
-            next: "Friday",
-            availability: ["9:00 AM", "1:00 PM", "3:30 PM"],
-            image: "👩‍⚕️",
-        },
-    ];
+    const [counselorsList, setCounselorsList] = useState<any[]>([]);
+
+    const fetchCounselors = async () => {
+        try {
+            const res = await api.get("/therapy/counselors");
+            if (res.data.length > 0) {
+                const mapped = res.data.map((user: any) => ({
+                    id: user._id,
+                    name: user.name,
+                    title: user.profile?.department || "Licensed Counselor",
+                    specialization: "General Therapy, Student Support",
+                    rating: "4.8",
+                    sessions: Math.floor(Math.random() * 50) + 10,
+                    next: "Today",
+                    availability: ["10:00 AM", "2:00 PM"],
+                    image: "👩‍⚕️",
+                }));
+                setCounselorsList(mapped);
+            }
+        } catch (error) {
+            console.log(error);
+        }
+    };
 
     // ================= Enhanced Mood Resources with 6 Books Each =================
     const moodResources: any = {
@@ -119,8 +112,19 @@ const TherapySupport = () => {
         }
     };
 
+    const fetchSessions = async () => {
+        try {
+            const res = await api.get("/counselor/session/student/my");
+            setSessions(res.data);
+        } catch (error) {
+            console.log(error);
+        }
+    };
+
     useEffect(() => {
         fetchAppointments();
+        fetchCounselors();
+        fetchSessions();
     }, []);
 
     // ================= Book Appointment =================
@@ -128,6 +132,7 @@ const TherapySupport = () => {
         try {
             await api.post("/therapy/book", {
                 counselorName: selectedCounselor,
+                counselorId: selectedCounselorId,
                 date,
                 time,
                 sessionType,
@@ -149,11 +154,9 @@ const TherapySupport = () => {
 
     return (
         <>
-            <Navbar />
-
             <style>
                 {`
-                    /* ========== Global Styles ========== */
+                    /* ========== PINK THEME STYLES ========== */
                     * {
                         margin: 0;
                         padding: 0;
@@ -162,7 +165,7 @@ const TherapySupport = () => {
 
                     body {
                         font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
-                        background-color: #f3f4f6;
+                        background: linear-gradient(135deg, #fff5f8 0%, #ffe8f0 100%);
                     }
 
                     .therapy-wrapper {
@@ -171,7 +174,6 @@ const TherapySupport = () => {
                         padding-right: 40px;
                         padding-bottom: 80px;
                         min-height: 100vh;
-                        background-color: #f3f4f6;
                     }
 
                     .therapy-container {
@@ -179,60 +181,108 @@ const TherapySupport = () => {
                         margin: 0 auto;
                     }
 
-                    /* ========== Header Section ========== */
-                    .header-section {
-                        margin-bottom: 32px;
+                    /* ========== HERO SECTION WITH IMAGE SIDE BY SIDE ========== */
+                    .hero-section {
+                        display: grid;
+                        grid-template-columns: 1fr 320px;
+                        gap: 40px;
+                        margin-bottom: 40px;
+                        background: white;
+                        border-radius: 24px;
+                        overflow: hidden;
+                        box-shadow: 0 4px 20px rgba(219, 39, 119, 0.08);
+                        border: 1px solid #ffe0ed;
+                        align-items: center;
                     }
 
-                    .main-title {
+                    .hero-content {
+                        padding: 40px;
+                    }
+
+                    .hero-content .main-title {
                         font-size: 32px;
                         font-weight: 700;
-                        color: #111827;
-                        margin-bottom: 8px;
+                        color: #b83280;
+                        margin-bottom: 12px;
                         display: flex;
                         align-items: center;
                         gap: 10px;
                     }
 
-                    .subtitle {
-                        color: #6b7280;
+                    .hero-content .subtitle {
+                        color: #9b6b7c;
                         font-size: 16px;
                         line-height: 1.5;
-                        margin-bottom: 24px;
+                    }
+
+                    .hero-image-wrapper {
+                        padding: 20px;
+                        display: flex;
+                        justify-content: center;
+                        align-items: center;
+                        background: linear-gradient(135deg, #fff0f5 0%, #ffe4ed 100%);
+                        height: 100%;
+                    }
+
+                    .hero-image {
+                        width: 100%;
+                        height: auto;
+                        max-height: 280px;
+                        object-fit: contain;
+                        border-radius: 16px;
+                    }
+
+                    @media (max-width: 768px) {
+                        .hero-section {
+                            grid-template-columns: 1fr;
+                        }
+                        .hero-image-wrapper {
+                            order: -1;
+                            padding: 30px;
+                        }
+                        .hero-content {
+                            padding: 30px;
+                        }
+                        .hero-content .main-title {
+                            font-size: 28px;
+                        }
+                        .therapy-wrapper {
+                            padding: 80px 16px 40px;
+                        }
                     }
 
                     /* ========== Emergency Button ========== */
                     .emergency-btn {
-                        background-color: #dc2626;
+                        background-color: #db2777;
                         color: white;
                         padding: 12px 24px;
                         border: none;
-                        border-radius: 8px;
+                        border-radius: 40px;
                         font-weight: 600;
                         font-size: 16px;
                         cursor: pointer;
                         transition: all 0.2s ease;
                         margin-bottom: 20px;
-                        box-shadow: 0 2px 4px rgba(220, 38, 38, 0.2);
+                        box-shadow: 0 2px 8px rgba(219, 39, 119, 0.3);
                     }
 
                     .emergency-btn:hover {
-                        background-color: #b91c1c;
+                        background-color: #be185d;
                         transform: translateY(-1px);
-                        box-shadow: 0 4px 8px rgba(220, 38, 38, 0.3);
+                        box-shadow: 0 4px 12px rgba(219, 39, 119, 0.4);
                     }
 
                     .emergency-box {
-                        background-color: #fee2e2;
-                        border-left: 4px solid #dc2626;
+                        background-color: #ffe4ed;
+                        border-left: 4px solid #db2777;
                         padding: 20px;
-                        border-radius: 8px;
+                        border-radius: 16px;
                         margin-bottom: 30px;
                     }
 
                     .emergency-box p {
                         margin: 8px 0;
-                        color: #7f1d1d;
+                        color: #9d174d;
                         font-weight: 500;
                     }
 
@@ -240,7 +290,7 @@ const TherapySupport = () => {
                     .section-header {
                         font-size: 24px;
                         font-weight: 600;
-                        color: #111827;
+                        color: #b83280;
                         margin: 40px 0 20px 0;
                         display: flex;
                         align-items: center;
@@ -257,10 +307,10 @@ const TherapySupport = () => {
 
                     .mood-btn {
                         padding: 10px 20px;
-                        border-radius: 30px;
-                        border: 1px solid #2563eb;
+                        border-radius: 40px;
+                        border: 2px solid #ec489a;
                         background: white;
-                        color: #2563eb;
+                        color: #db2777;
                         font-weight: 500;
                         cursor: pointer;
                         transition: all 0.2s ease;
@@ -268,13 +318,14 @@ const TherapySupport = () => {
                     }
 
                     .mood-btn:hover {
-                        background: #dbeafe;
+                        background: #ffe4ed;
+                        border-color: #db2777;
                     }
 
                     .mood-btn.active {
-                        background: #2563eb;
+                        background: #db2777;
                         color: white;
-                        border-color: #2563eb;
+                        border-color: #db2777;
                     }
 
                     /* ========== Book Grid ========== */
@@ -288,27 +339,28 @@ const TherapySupport = () => {
                     .book-card {
                         background: white;
                         padding: 20px;
-                        border-radius: 12px;
-                        box-shadow: 0 1px 3px rgba(0,0,0,0.1);
-                        border: 1px solid #e5e7eb;
+                        border-radius: 20px;
+                        box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+                        border: 1px solid #ffe0ed;
                         transition: all 0.2s ease;
                     }
 
                     .book-card:hover {
-                        box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+                        box-shadow: 0 8px 24px rgba(219, 39, 119, 0.1);
                         transform: translateY(-2px);
+                        border-color: #ec489a;
                     }
 
                     .book-title {
                         font-size: 16px;
                         font-weight: 600;
-                        color: #111827;
+                        color: #831843;
                         margin-bottom: 6px;
                     }
 
                     .book-author {
                         font-size: 14px;
-                        color: #6b7280;
+                        color: #9b6b7c;
                         margin-bottom: 8px;
                     }
 
@@ -318,36 +370,36 @@ const TherapySupport = () => {
                         align-items: center;
                         margin-top: 12px;
                         padding-top: 12px;
-                        border-top: 1px solid #f3f4f6;
+                        border-top: 1px solid #ffe0ed;
                     }
 
                     .book-rating {
-                        background: #fbbf24;
-                        color: #111827;
+                        background: #fbc4d5;
+                        color: #831843;
                         padding: 4px 8px;
-                        border-radius: 4px;
+                        border-radius: 20px;
                         font-size: 12px;
                         font-weight: 600;
                     }
 
                     .book-pages {
                         font-size: 12px;
-                        color: #9ca3af;
+                        color: #b86f88;
                     }
 
                     .book-action {
-                        background: #f3f4f6;
+                        background: #ffe4ed;
                         border: none;
                         padding: 6px 12px;
-                        border-radius: 6px;
+                        border-radius: 20px;
                         font-size: 13px;
-                        color: #4b5563;
+                        color: #db2777;
                         cursor: pointer;
                         transition: all 0.2s ease;
                     }
 
                     .book-action:hover {
-                        background: #e5e7eb;
+                        background: #fbc4d5;
                     }
 
                     /* ========== Counselor Cards ========== */
@@ -361,15 +413,16 @@ const TherapySupport = () => {
                     .counselor-card {
                         background: white;
                         padding: 24px;
-                        border-radius: 12px;
-                        box-shadow: 0 1px 3px rgba(0,0,0,0.1);
-                        border: 1px solid #e5e7eb;
+                        border-radius: 24px;
+                        box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+                        border: 1px solid #ffe0ed;
                         transition: all 0.2s ease;
                     }
 
                     .counselor-card:hover {
-                        box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+                        box-shadow: 0 8px 24px rgba(219, 39, 119, 0.1);
                         transform: translateY(-2px);
+                        border-color: #ec489a;
                     }
 
                     .counselor-header {
@@ -385,13 +438,13 @@ const TherapySupport = () => {
                     .counselor-info h4 {
                         font-size: 18px;
                         font-weight: 600;
-                        color: #111827;
+                        color: #831843;
                         margin-bottom: 4px;
                     }
 
                     .counselor-title {
                         font-size: 14px;
-                        color: #6b7280;
+                        color: #9b6b7c;
                         margin-bottom: 6px;
                     }
 
@@ -403,30 +456,31 @@ const TherapySupport = () => {
                     }
 
                     .rating-badge {
-                        background: #fbbf24;
+                        background: #fbc4d5;
                         padding: 4px 8px;
-                        border-radius: 4px;
+                        border-radius: 20px;
                         font-weight: 600;
                         font-size: 13px;
+                        color: #831843;
                     }
 
                     .sessions-count {
-                        color: #9ca3af;
+                        color: #b86f88;
                         font-size: 13px;
                     }
 
                     .specialization {
                         font-size: 14px;
-                        color: #4b5563;
+                        color: #6b4c5c;
                         margin-bottom: 12px;
                         line-height: 1.5;
                     }
 
                     .availability {
-                        background: #ecfdf5;
-                        color: #047857;
+                        background: #ffe4ed;
+                        color: #db2777;
                         padding: 8px 12px;
-                        border-radius: 6px;
+                        border-radius: 40px;
                         font-size: 14px;
                         font-weight: 500;
                         margin: 16px 0;
@@ -434,18 +488,19 @@ const TherapySupport = () => {
 
                     .book-btn {
                         width: 100%;
-                        background: #2563eb;
+                        background: #db2777;
                         color: white;
                         border: none;
                         padding: 12px;
-                        border-radius: 8px;
+                        border-radius: 40px;
                         font-weight: 600;
                         cursor: pointer;
                         transition: all 0.2s ease;
                     }
 
                     .book-btn:hover {
-                        background: #1d4ed8;
+                        background: #be185d;
+                        transform: translateY(-1px);
                     }
 
                     /* ========== Booking Modal ========== */
@@ -471,10 +526,11 @@ const TherapySupport = () => {
                     .modal-content {
                         background: white;
                         padding: 32px;
-                        border-radius: 16px;
+                        border-radius: 28px;
                         width: 450px;
                         max-width: 90%;
                         animation: slideUp 0.3s ease;
+                        border: 1px solid #ffe0ed;
                     }
 
                     @keyframes slideUp {
@@ -491,7 +547,7 @@ const TherapySupport = () => {
                     .modal-content h3 {
                         font-size: 22px;
                         font-weight: 600;
-                        color: #111827;
+                        color: #b83280;
                         margin-bottom: 20px;
                     }
 
@@ -503,23 +559,23 @@ const TherapySupport = () => {
                         display: block;
                         font-size: 14px;
                         font-weight: 500;
-                        color: #4b5563;
+                        color: #9b6b7c;
                         margin-bottom: 6px;
                     }
 
                     .form-input {
                         width: 100%;
                         padding: 12px;
-                        border: 1px solid #e5e7eb;
-                        border-radius: 8px;
+                        border: 1px solid #ffe0ed;
+                        border-radius: 16px;
                         font-size: 15px;
                         transition: all 0.2s ease;
                     }
 
                     .form-input:focus {
                         outline: none;
-                        border-color: #2563eb;
-                        box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+                        border-color: #db2777;
+                        box-shadow: 0 0 0 3px rgba(219, 39, 119, 0.1);
                     }
 
                     .modal-actions {
@@ -530,34 +586,34 @@ const TherapySupport = () => {
 
                     .confirm-btn {
                         flex: 1;
-                        background: #16a34a;
+                        background: #db2777;
                         color: white;
                         border: none;
                         padding: 12px;
-                        border-radius: 8px;
+                        border-radius: 40px;
                         font-weight: 600;
                         cursor: pointer;
                         transition: all 0.2s ease;
                     }
 
                     .confirm-btn:hover {
-                        background: #15803d;
+                        background: #be185d;
                     }
 
                     .cancel-btn {
                         flex: 1;
-                        background: #f3f4f6;
-                        color: #4b5563;
+                        background: #ffe4ed;
+                        color: #db2777;
                         border: none;
                         padding: 12px;
-                        border-radius: 8px;
+                        border-radius: 40px;
                         font-weight: 600;
                         cursor: pointer;
                         transition: all 0.2s ease;
                     }
 
                     .cancel-btn:hover {
-                        background: #e5e7eb;
+                        background: #fbc4d5;
                     }
 
                     /* ========== Confirmation Toast ========== */
@@ -565,10 +621,10 @@ const TherapySupport = () => {
                         position: fixed;
                         top: 120px;
                         right: 30px;
-                        background: #16a34a;
+                        background: #db2777;
                         color: white;
                         padding: 16px 24px;
-                        border-radius: 8px;
+                        border-radius: 40px;
                         box-shadow: 0 4px 12px rgba(0,0,0,0.1);
                         animation: slideIn 0.3s ease;
                         z-index: 1001;
@@ -594,17 +650,37 @@ const TherapySupport = () => {
                         background: white;
                         padding: 20px;
                         margin-bottom: 12px;
-                        border-radius: 10px;
-                        border: 1px solid #e5e7eb;
+                        border-radius: 20px;
+                        border: 1px solid #ffe0ed;
                         display: flex;
                         justify-content: space-between;
                         align-items: center;
+                        transition: all 0.2s ease;
+                    }
+
+                    .appointment-card:hover {
+                        border-color: #ec489a;
                     }
 
                     .appointment-info h4 {
                         font-size: 16px;
                         font-weight: 600;
-                        color: #111827;
+                        color: #831843;
+                        margin-bottom: 6px;
+                    }
+
+                    .session-card {
+                        background: #ffe4ed;
+                        padding: 20px;
+                        margin-bottom: 12px;
+                        border-radius: 20px;
+                        border: 1px solid #fbc4d5;
+                    }
+
+                    .session-card h4 {
+                        font-size: 16px;
+                        font-weight: 600;
+                        color: #b83280;
                         margin-bottom: 6px;
                     }
 
@@ -612,37 +688,37 @@ const TherapySupport = () => {
                         display: flex;
                         gap: 20px;
                         font-size: 14px;
-                        color: #6b7280;
+                        color: #9b6b7c;
                     }
 
                     .status-badge {
                         padding: 6px 12px;
-                        border-radius: 20px;
+                        border-radius: 40px;
                         font-size: 13px;
                         font-weight: 500;
                     }
 
                     .status-confirmed, .status-upcoming {
-                        background: #dbeafe;
-                        color: #1e40af;
+                        background: #ffe4ed;
+                        color: #db2777;
                         text-transform: capitalize;
                     }
 
                     .status-pending {
-                        background: #fef3c7;
-                        color: #92400e;
+                        background: #fff0e0;
+                        color: #c97e3e;
                         text-transform: capitalize;
                     }
 
                     .status-completed {
-                        background: #d1fae5;
-                        color: #065f46;
+                        background: #e0f5e8;
+                        color: #2f6b47;
                         text-transform: capitalize;
                     }
 
                     .status-cancelled {
-                        background: #fee2e2;
-                        color: #991b1b;
+                        background: #ffe0ed;
+                        color: #db2777;
                         text-transform: capitalize;
                     }
 
@@ -651,20 +727,13 @@ const TherapySupport = () => {
                         text-align: center;
                         padding: 40px;
                         background: white;
-                        border-radius: 12px;
-                        color: #9ca3af;
+                        border-radius: 24px;
+                        color: #b86f88;
+                        border: 1px solid #ffe0ed;
                     }
 
                     /* ========== Responsive Design ========== */
                     @media (max-width: 768px) {
-                        .therapy-wrapper {
-                            padding: 80px 16px 40px;
-                        }
-
-                        .main-title {
-                            font-size: 28px;
-                        }
-
                         .counselor-grid {
                             grid-template-columns: 1fr;
                         }
@@ -683,19 +752,35 @@ const TherapySupport = () => {
                             flex-direction: column;
                             gap: 6px;
                         }
+
+                        .confirmation-toast {
+                            top: 80px;
+                            right: 16px;
+                            left: 16px;
+                            text-align: center;
+                        }
                     }
                 `}
             </style>
 
             <div className="therapy-wrapper">
                 <div className="therapy-container">
-                    {/* Header Section */}
-                    <div className="header-section">
-                        <h1 className="main-title">🧘 Therapy & Mental Health Support</h1>
-                        <p className="subtitle">
-                            Confidential emotional support for students affected by cyber incidents.
-                            All sessions are private and secure with licensed professionals.
-                        </p>
+                    {/* Hero Section with Image on Right */}
+                    <div className="hero-section">
+                        <div className="hero-content">
+                            <h1 className="main-title">🧘 Therapy & Mental Health Support</h1>
+                            <p className="subtitle">
+                                Confidential emotional support for students affected by cyber incidents.
+                                All sessions are private and secure with licensed professionals.
+                            </p>
+                        </div>
+                        <div className="hero-image-wrapper">
+                            <img
+                                src="https://as2.ftcdn.net/jpg/04/14/31/39/1000_F_414313961_aGTslco13WzNyIo9lp9pX7LhQb9edQu4.jpg"
+                                alt="Mental Health Support"
+                                className="hero-image"
+                            />
+                        </div>
                     </div>
 
                     {/* Emergency Button */}
@@ -734,7 +819,7 @@ const TherapySupport = () => {
                     {/* Book Recommendations */}
                     {selectedMood && moodResources[selectedMood] && (
                         <div style={{ marginTop: "30px" }}>
-                            <h3 style={{ fontSize: "20px", marginBottom: "16px" }}>
+                            <h3 style={{ fontSize: "20px", marginBottom: "16px", color: "#b83280" }}>
                                 📚 Recommended Books for {selectedMood} Mood
                             </h3>
                             <div className="books-grid">
@@ -756,7 +841,7 @@ const TherapySupport = () => {
                     {/* Book Counseling Section */}
                     <h2 className="section-header">📅 Book a Counseling Session</h2>
                     <div className="counselor-grid">
-                        {counselors.map((c, index) => (
+                        {counselorsList.map((c, index) => (
                             <div key={index} className="counselor-card">
                                 <div className="counselor-header">
                                     <span className="counselor-avatar">{c.image}</span>
@@ -783,6 +868,7 @@ const TherapySupport = () => {
                                     className="book-btn"
                                     onClick={() => {
                                         setSelectedCounselor(c.name);
+                                        setSelectedCounselorId(c.id);
                                         setShowBooking(true);
                                     }}
                                 >
@@ -898,6 +984,23 @@ const TherapySupport = () => {
                                 </div>
                             ))}
                         </div>
+                    )}
+                    <h2 className="section-header">🧾 My Counseling History</h2>
+                    {sessions.length === 0 ? (
+                        <div className="empty-state">
+                            <p>No past sessions found.</p>
+                        </div>
+                    ) : (
+                        sessions.map((session, index) => (
+                            <div key={index} className="session-card">
+                                <h4>Session with {session.counselor?.name || "Counselor"}</h4>
+                                <div className="appointment-details">
+                                    <span>📅 {new Date(session.createdAt).toLocaleDateString()}</span>
+                                    <span>🧠 Mood: {session.mood}</span>
+                                    <span>✔ Needs: {session.recommendation || "Continued support recommended"}</span>
+                                </div>
+                            </div>
+                        ))
                     )}
                 </div>
             </div>

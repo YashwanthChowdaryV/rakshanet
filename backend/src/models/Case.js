@@ -16,16 +16,21 @@ const caseSchema = new mongoose.Schema(
         platform: String,
 
         description: String,
+        multipleInputs: [String],
 
         severity: {
             type: String,
             enum: ["Critical", "High", "Medium", "Low"],
             default: "Low",
         },
+        severityColor: {
+            type: String,
+            default: "#10b981", // default green for Low
+        },
 
         status: {
             type: String,
-            enum: ["New", "Under Review", "Escalated", "Resolved", "Closed"],
+            enum: ["New", "Under Review", "Escalated", "Lawyer Review", "Resolved", "Closed"],
             default: "New",
         },
 
@@ -66,6 +71,13 @@ const caseSchema = new mongoose.Schema(
                 text: String,
                 date: { type: Date, default: Date.now },
             },
+        ],
+
+        logs: [
+            {
+                action: String,
+                timestamp: { type: Date, default: Date.now }
+            }
         ],
     },
     { timestamps: true }

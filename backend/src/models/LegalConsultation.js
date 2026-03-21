@@ -13,6 +13,11 @@ const legalConsultationSchema = new mongoose.Schema(
             required: true,
         },
 
+        lawyerId: {
+            type: mongoose.Schema.Types.ObjectId,
+            ref: "User",
+        },
+
         caseNumber: {
             type: String,
             required: true,

@@ -1,4 +1,3 @@
-import Navbar from "../components/Navbar";
 import { useNavigate } from "react-router-dom";
 import { useState, useEffect } from "react";
 import api from "../services/api";
@@ -6,627 +5,539 @@ import api from "../services/api";
 const Dashboard = () => {
     const navigate = useNavigate();
     const [currentQuoteIndex, setCurrentQuoteIndex] = useState(0);
-    const [casesCount, setCasesCount] = useState(0);
+    const [stats, setStats] = useState({
+        total: 0,
+        new: 0,
+        review: 0,
+        resolved: 0,
+    });
     const [legalCount, setLegalCount] = useState(0);
     const [therapyCount, setTherapyCount] = useState(0);
+    const [recentCases, setRecentCases] = useState<any[]>([]);
 
     useEffect(() => {
         const fetchDashboardData = async () => {
             try {
+                const statsRes = await api.get("/cases/stats");
+                setStats({
+                    total: statsRes.data.totalCases || 0,
+                    new: statsRes.data.new || 0,
+                    review: statsRes.data.review || 0,
+                    resolved: statsRes.data.resolved || 0
+                });
+
                 const casesRes = await api.get("/cases");
-                setCasesCount(casesRes.data?.cases?.length || 0);
+                const allCases = Array.isArray(casesRes.data) ? casesRes.data : (casesRes.data.cases || []);
+                setRecentCases(allCases.slice(0, 3));
 
                 const legalRes = await api.get("/legal/my");
-                setLegalCount(legalRes.data?.length || 0);
+                setLegalCount(Array.isArray(legalRes.data) ? legalRes.data.length : (legalRes.data.consultations?.length || 0));
 
                 const therapyRes = await api.get("/therapy/my");
-                setTherapyCount(therapyRes.data?.length || 0);
+                setTherapyCount(Array.isArray(therapyRes.data) ? therapyRes.data.length : (therapyRes.data.sessions?.length || 0));
             } catch (error) {
                 console.error("Dashboard fetch error", error);
             }
         };
         fetchDashboardData();
+
+        const quoteInterval = setInterval(() => {
+            setCurrentQuoteIndex((prev) => (prev + 1) % motivationalFlashcards.length);
+        }, 8000);
+
+        return () => clearInterval(quoteInterval);
     }, []);
 
     const pillars = [
-        {
-            name: "Report Incident",
-            path: "/report",
-            icon: "🚨",
-            description: "File a new cyber incident report",
-            color: "#2563eb"
-        },
-        {
-            name: "Case Management",
-            path: "/cases",
-            icon: "📋",
-            description: "Track your ongoing cases",
-            color: "#7c3aed"
-        },
-        {
-            name: "AI Abuse Detection (NLP)",
-            path: "/nlp",
-            icon: "🤖",
-            description: "Analyze text for harassment, threats & blackmail",
-            color: "#0891b2"
-        },
-        {
-            name: "Legal Consultation",
-            path: "/legal",
-            icon: "⚖️",
-            description: "Free legal advice from experts",
-            color: "#b45309"
-        },
-        {
-            name: "Therapy Support",
-            path: "/therapy",
-            icon: "🧘",
-            description: "Mental health & counseling",
-            color: "#be185d"
-        },
-        {
-            name: "LinkedIn Report",
-            path: "/linkedin-report",
-            icon: "💼",
-            description: "Corporate harassment reporting",
-            color: "#0a66c2"
-        },
+        { name: "Report Incident", path: "/report", icon: "🚨", description: "File a new incident", color: "linear-gradient(135deg, #ef4444 0%, #b91c1c 100%)" },
+        { name: "Case Management", path: "/cases", icon: "📋", description: "Track your cases", color: "linear-gradient(135deg, #3b82f6 0%, #1e3a8a 100%)" },
+        { name: "Abuse Detection", path: "/nlp", icon: "🤖", description: "AI Text Analysis", color: "linear-gradient(135deg, #8b5cf6 0%, #4c1d95 100%)", badge: "NEW" },
+        { name: "Legal Consultation", path: "/legal", icon: "⚖️", description: "Expert legal advice", color: "linear-gradient(135deg, #f59e0b 0%, #92400e 100%)" },
+        { name: "Therapy Support", path: "/therapy", icon: "🧘", description: "Mental health help", color: "linear-gradient(135deg, #ec4899 0%, #9d174d 100%)" },
+        { name: "Corporate Report", path: "/linkedin-report", icon: "💼", description: "Workplace safety", color: "linear-gradient(135deg, #0a66c2 0%, #004182 100%)" },
     ];
 
     const motivationalFlashcards = [
-        {
-            title: "🌸 You Are Not Alone",
-            content: "Thousands of women have stood where you stand today. Your voice matters, and we are here to support you every step of the way."
-        },
-        {
-            title: "💪 Courage is Within You",
-            content: "The first step is always the hardest, but you've already taken it by being here. You are stronger than you know."
-        },
-        {
-            title: "🛡️ Your Safety Matters",
-            content: "You deserve to feel safe online and offline. Never let anyone make you feel otherwise."
-        },
-        {
-            title: "🌟 Every Voice Counts",
-            content: "When you speak up, you not only help yourself but also inspire countless others to find their voice."
-        },
-        {
-            title: "🤝 You Have Support",
-            content: "Our counselors, lawyers, and support team are just a click away. You never have to face this alone."
-        },
-        {
-            title: "🌅 A New Beginning",
-            content: "Every day is a chance to start fresh. Don't let the past define your future."
-        },
-        {
-            title: "💖 Self-Care is Not Selfish",
-            content: "Taking care of your mental health is essential. You cannot pour from an empty cup."
-        },
-        {
-            title: "⚖️ Justice is Possible",
-            content: "The law is on your side. Cyber harassment is a crime, and perpetrators can be held accountable."
-        },
-        {
-            title: "🌺 You Are Worthy",
-            content: "You deserve respect, dignity, and happiness. No one has the right to take that away from you."
-        },
-        {
-            title: "🕊️ Peace is Your Right",
-            content: "You have the right to live without fear, harassment, or intimidation."
-        }
+        { title: "🌸 You Are Not Alone", content: "Thousands have stood where you stand. We are here to support you." },
+        { title: "💪 Courage is Within You", content: "The first step is hardest, but you've already taken it. You are strong." },
+        { title: "🛡️ Your Safety Matters", content: "You deserve to feel safe online and offline. Never forget your worth." },
+        { title: "⚖️ Justice is Possible", content: "The law is on your side. Cyber harassment is a crime, not your fault." },
     ];
 
-    const nextQuote = () => {
-        setCurrentQuoteIndex((prev) => (prev + 1) % motivationalFlashcards.length);
-    };
-
-    const prevQuote = () => {
-        setCurrentQuoteIndex((prev) => (prev - 1 + motivationalFlashcards.length) % motivationalFlashcards.length);
-    };
-
     return (
-        <>
+        <div className="dashboard-root">
+
+
             <style>
                 {`
-                    * {
-                        margin: 0;
-                        padding: 0;
-                        box-sizing: border-box;
-                    }
+                    @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
 
-                    body {
-                        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
-                        background-color: #ffffff;
-                    }
-
-                    .dashboard-wrapper {
-                        padding-top: 100px;
-                        padding-left: 40px;
-                        padding-right: 40px;
-                        padding-bottom: 60px;
+                    .dashboard-root {
+                        font-family: 'Plus Jakarta Sans', sans-serif;
+                        background: linear-gradient(135deg, #fff5f5 0%, #ffe8e8 100%);
                         min-height: 100vh;
-                        background-color: #ffffff;
+                        padding-top: 80px;
+                        color: #7f1a1a;
                     }
 
-                    .dashboard-container {
-                        max-width: 1200px;
+                    .main-layout {
+                        max-width: 1400px;
                         margin: 0 auto;
+                        padding: 40px;
+                        display: grid;
+                        grid-template-columns: 1fr 380px;
+                        gap: 32px;
                     }
 
-                    /* Welcome Section */
-                    .welcome-section {
-                        text-align: center;
+                    @media (max-width: 1100px) {
+                        .main-layout {
+                            grid-template-columns: 1fr;
+                        }
+                    }
+
+                    /* Header Section */
+                    .header-section {
                         margin-bottom: 40px;
-                        padding: 20px 0;
                     }
 
-                    .welcome-title {
+                    .welcome-banner {
+                        background: linear-gradient(135deg, #991b1b 0%, #7f1a1a 100%);
+                        border-radius: 24px;
+                        padding: 48px;
+                        color: white;
+                        position: relative;
+                        overflow: hidden;
+                        box-shadow: 0 20px 25px -5px rgba(153, 27, 27, 0.3);
+                    }
+
+                    .welcome-banner::before {
+                        content: '';
+                        position: absolute;
+                        top: -50%;
+                        right: -10%;
+                        width: 400px;
+                        height: 400px;
+                        background: radial-gradient(circle, rgba(239, 68, 68, 0.2) 0%, transparent 70%);
+                        pointer-events: none;
+                    }
+
+                    .welcome-banner h1 {
                         font-size: 36px;
-                        font-weight: 700;
-                        color: #1e293b;
+                        font-weight: 800;
                         margin-bottom: 12px;
+                        letter-spacing: -0.02em;
                     }
 
-                    .welcome-subtitle {
+                    .welcome-banner p {
                         font-size: 18px;
-                        color: #64748b;
-                        max-width: 700px;
-                        margin: 0 auto;
+                        opacity: 0.9;
+                        max-width: 600px;
                         line-height: 1.6;
                     }
 
-                    /* Quick Stats Grid */
-                    .quick-stats-grid {
+                    /* Stats Grid */
+                    .stats-grid {
                         display: grid;
-                        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+                        grid-template-columns: repeat(4, 1fr);
                         gap: 20px;
-                        margin-bottom: 40px;
+                        margin-top: -30px;
+                        padding: 0 40px;
+                        position: relative;
+                        z-index: 10;
                     }
 
-                    .stat-widget {
-                        background: #f8fafc;
-                        border: 1px solid #e2e8f0;
+                    @media (max-width: 900px) {
+                        .stats-grid {
+                            grid-template-columns: repeat(2, 1fr);
+                        }
+                    }
+
+                    .stat-card {
+                        background: white;
+                        border-radius: 20px;
                         padding: 24px;
-                        border-radius: 16px;
-                        text-align: center;
-                        box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05);
-                        transition: transform 0.2s ease;
-                        cursor: pointer;
+                        box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.05);
+                        border: 1px solid #ffe0e0;
+                        transition: transform 0.3s ease, box-shadow 0.3s ease;
+                        display: flex;
+                        flex-direction: column;
                     }
 
-                    .stat-widget:hover {
-                        transform: translateY(-4px);
-                        border-color: #cbd5e1;
+                    .stat-card:hover {
+                        transform: translateY(-5px);
+                        box-shadow: 0 20px 25px -5px rgba(220, 38, 38, 0.15);
+                        border-color: #fecaca;
                     }
 
-                    .stat-number {
+                    .stat-header {
+                        display: flex;
+                        justify-content: space-between;
+                        align-items: center;
+                        margin-bottom: 16px;
+                    }
+
+                    .stat-icon {
+                        width: 40px;
+                        height: 40px;
+                        border-radius: 10px;
+                        display: flex;
+                        align-items: center;
+                        justify-content: center;
+                        font-size: 20px;
+                    }
+
+                    .stat-value {
                         font-size: 32px;
                         font-weight: 800;
-                        color: #0f172a;
-                        margin-bottom: 8px;
+                        color: #991b1b;
                     }
 
                     .stat-label {
                         font-size: 14px;
-                        color: #64748b;
-                        font-weight: 500;
+                        color: #b91c1c;
+                        font-weight: 600;
                     }
 
-                    /* Pillar Grid - Main Navigation */
+                    /* Content Sections */
+                    .pillars-section {
+                        margin-top: 40px;
+                    }
+
+                    .section-title {
+                        font-size: 22px;
+                        font-weight: 700;
+                        margin-bottom: 24px;
+                        display: flex;
+                        align-items: center;
+                        gap: 12px;
+                        color: #991b1b;
+                    }
+
                     .pillar-grid {
                         display: grid;
-                        grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-                        gap: 24px;
-                        margin-bottom: 60px;
+                        grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+                        gap: 20px;
                     }
 
                     .pillar-card {
-                        background: #ffffff;
-                        border-radius: 16px;
-                        padding: 28px;
+                        background: white;
+                        border-radius: 20px;
+                        padding: 24px;
+                        border: 1px solid #ffe0e0;
                         cursor: pointer;
-                        transition: all 0.3s ease;
-                        border: 1px solid #e2e8f0;
-                        box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05);
+                        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
                         position: relative;
                         overflow: hidden;
                     }
 
-                    .pillar-card::before {
-                        content: '';
-                        position: absolute;
-                        top: 0;
-                        left: 0;
-                        right: 0;
-                        height: 4px;
-                        background: ${pillars.map(p => p.color).join(', ')};
-                        background: linear-gradient(90deg, ${pillars.map(p => p.color).join(', ')});
-                    }
-
                     .pillar-card:hover {
+                        border-color: #ef4444;
+                        background: #fff5f5;
                         transform: translateY(-4px);
-                        box-shadow: 0 20px 25px -5px rgba(0,0,0,0.1);
-                        border-color: #cbd5e1;
+                        box-shadow: 0 8px 20px rgba(239, 68, 68, 0.15);
                     }
 
-                    .pillar-icon {
-                        font-size: 48px;
-                        margin-bottom: 16px;
+                    .pillar-icon-box {
+                        width: 56px;
+                        height: 56px;
+                        border-radius: 16px;
+                        display: flex;
+                        align-items: center;
+                        justify-content: center;
+                        font-size: 28px;
+                        margin-bottom: 20px;
+                        color: white;
                     }
 
                     .pillar-card h3 {
-                        font-size: 22px;
-                        font-weight: 600;
+                        font-size: 18px;
+                        font-weight: 700;
                         margin-bottom: 8px;
-                        color: #1e293b;
+                        color: #7f1a1a;
                     }
 
-                    .pillar-description {
+                    .pillar-card p {
                         font-size: 14px;
-                        color: #64748b;
+                        color: #b91c1c;
                         line-height: 1.5;
-                        margin-bottom: 16px;
                     }
 
-                    .pillar-arrow {
-                        font-size: 20px;
-                        opacity: 0;
-                        transform: translateX(-10px);
-                        transition: all 0.3s ease;
-                        color: #2563eb;
-                    }
-
-                    .pillar-card:hover .pillar-arrow {
-                        opacity: 1;
-                        transform: translateX(0);
-                    }
-
-                    /* NLP Badge */
-                    .nlp-badge {
+                    .badge {
                         position: absolute;
-                        top: 10px;
-                        right: 10px;
-                        background: #0891b2;
+                        top: 16px;
+                        right: 16px;
+                        background: #ef4444;
                         color: white;
                         font-size: 10px;
+                        font-weight: 800;
                         padding: 4px 8px;
                         border-radius: 20px;
-                        font-weight: 600;
-                        letter-spacing: 0.5px;
                     }
 
-                    /* Motivational Flashcards Section */
-                    .flashcard-section {
-                        margin-top: 40px;
-                    }
-
-                    .section-header {
+                    /* Right Sidebar */
+                    .sidebar-content {
                         display: flex;
-                        justify-content: space-between;
-                        align-items: center;
-                        margin-bottom: 30px;
-                        flex-wrap: wrap;
-                        gap: 16px;
+                        flex-direction: column;
+                        gap: 32px;
                     }
 
-                    .section-header h2 {
-                        font-size: 28px;
-                        font-weight: 700;
-                        color: #1e293b;
-                        position: relative;
-                        padding-bottom: 8px;
-                    }
-
-                    .section-header h2::after {
-                        content: '';
-                        position: absolute;
-                        bottom: 0;
-                        left: 0;
-                        width: 60px;
-                        height: 3px;
-                        background: linear-gradient(90deg, #ec4899, #8b5cf6);
-                        border-radius: 2px;
-                    }
-
-                    .flashcard-controls {
-                        display: flex;
-                        gap: 12px;
-                    }
-
-                    .flashcard-btn {
-                        width: 40px;
-                        height: 40px;
-                        border: 1px solid #e2e8f0;
+                    .side-card {
                         background: white;
-                        border-radius: 50%;
-                        cursor: pointer;
-                        font-size: 18px;
-                        transition: all 0.2s ease;
-                        display: flex;
-                        align-items: center;
-                        justify-content: center;
-                    }
-
-                    .flashcard-btn:hover {
-                        background: #f8fafc;
-                        border-color: #94a3b8;
-                    }
-
-                    .quote-card {
-                        background: #ffffff;
-                        border: 1px solid #e2e8f0;
                         border-radius: 24px;
-                        padding: 40px;
-                        margin-bottom: 30px;
-                        box-shadow: 0 10px 25px -5px rgba(0,0,0,0.05);
-                        transition: all 0.3s ease;
-                        min-height: 250px;
+                        padding: 28px;
+                        border: 1px solid #ffe0e0;
+                        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+                    }
+
+                    .quote-display {
+                        background: linear-gradient(135deg, #dc2626 0%, #b91c1c 100%);
+                        color: white;
+                        min-height: 200px;
                         display: flex;
                         flex-direction: column;
                         justify-content: center;
+                        text-align: center;
+                        transition: all 0.5s ease;
                     }
 
-                    .quote-card:hover {
-                        box-shadow: 0 20px 30px -10px rgba(0,0,0,0.1);
-                    }
-
-                    .quote-icon {
-                        font-size: 48px;
-                        margin-bottom: 20px;
-                        color: #ec4899;
-                    }
-
-                    .quote-text {
-                        font-size: 28px;
-                        font-weight: 500;
-                        color: #1e293b;
-                        line-height: 1.5;
-                        margin-bottom: 20px;
-                        font-style: italic;
-                    }
-
-                    .quote-title {
-                        font-size: 20px;
-                        font-weight: 600;
-                        color: #ec4899;
-                        margin-bottom: 12px;
-                    }
-
-                    .quote-progress {
+                    .quote-display h4 {
                         font-size: 14px;
-                        color: #94a3b8;
-                        margin-top: 20px;
+                        text-transform: uppercase;
+                        letter-spacing: 0.1em;
+                        opacity: 0.9;
+                        margin-bottom: 16px;
                     }
 
-                    /* Flashcard Grid */
-                    .flashcards-grid {
-                        display: grid;
-                        grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-                        gap: 24px;
-                        margin-top: 30px;
-                    }
-
-                    .flashcard {
-                        background: #ffffff;
-                        border: 1px solid #e2e8f0;
-                        border-radius: 20px;
-                        padding: 28px;
-                        transition: all 0.3s ease;
-                    }
-
-                    .flashcard:hover {
-                        transform: translateY(-4px);
-                        box-shadow: 0 15px 30px -10px rgba(0,0,0,0.1);
-                        border-color: #cbd5e1;
-                    }
-
-                    .flashcard-title {
+                    .quote-display p {
                         font-size: 20px;
                         font-weight: 600;
-                        color: #1e293b;
-                        margin-bottom: 16px;
+                        line-height: 1.5;
+                    }
+
+                    .activity-list {
+                        display: flex;
+                        flex-direction: column;
+                        gap: 20px;
+                    }
+
+                    .activity-item {
+                        display: flex;
+                        gap: 16px;
+                        align-items: flex-start;
+                    }
+
+                    .activity-icon {
+                        width: 40px;
+                        height: 40px;
+                        border-radius: 10px;
+                        background: #fff5f5;
+                        display: flex;
+                        align-items: center;
+                        justify-content: center;
+                        flex-shrink: 0;
+                    }
+
+                    .activity-info h5 {
+                        font-size: 14px;
+                        font-weight: 700;
+                        margin-bottom: 4px;
+                        color: #991b1b;
+                    }
+
+                    .activity-info p {
+                        font-size: 13px;
+                        color: #b91c1c;
+                    }
+
+                    /* Emergency Bar */
+                    .emergency-widget {
+                        background: #fff5f5;
+                        border: 1px solid #fee2e2;
+                        padding: 24px;
+                        border-radius: 20px;
+                        margin-top: 40px;
+                    }
+
+                    .emergency-widget h3 {
+                        color: #991b1b;
+                        font-size: 18px;
+                        margin-bottom: 12px;
                         display: flex;
                         align-items: center;
                         gap: 8px;
                     }
 
-                    .flashcard-content {
-                        font-size: 16px;
-                        color: #475569;
-                        line-height: 1.7;
+                    .emergency-contacts {
+                        display: grid;
+                        grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+                        gap: 12px;
                     }
 
-                    /* Emergency Contact Bar */
-                    .emergency-bar {
-                        margin-top: 50px;
-                        padding: 24px;
-                        background: #fef2f2;
-                        border: 1px solid #fecaca;
-                        border-radius: 16px;
-                        display: flex;
-                        justify-content: space-between;
-                        align-items: center;
-                        flex-wrap: wrap;
-                        gap: 16px;
-                    }
-
-                    .emergency-text {
-                        color: #991b1b;
-                    }
-
-                    .emergency-text strong {
-                        font-size: 18px;
-                        display: block;
-                        margin-bottom: 8px;
-                    }
-
-                    .emergency-numbers {
-                        display: flex;
-                        gap: 24px;
-                        flex-wrap: wrap;
-                    }
-
-                    .emergency-number {
+                    .contact-pill {
                         background: white;
+                        border: 1px solid #fee2e2;
                         padding: 8px 16px;
-                        border-radius: 30px;
-                        border: 1px solid #fecaca;
+                        border-radius: 12px;
+                        font-size: 13px;
+                        font-weight: 600;
                         color: #b91c1c;
-                        font-weight: 500;
+                        text-align: center;
                     }
 
-                    .emergency-call-btn {
+                    .call-emergency-btn {
+                        width: 100%;
                         background: #dc2626;
                         color: white;
                         border: none;
-                        padding: 12px 32px;
-                        border-radius: 40px;
-                        font-weight: 600;
-                        font-size: 16px;
+                        padding: 14px;
+                        border-radius: 12px;
+                        font-weight: 700;
+                        margin-top: 20px;
                         cursor: pointer;
-                        transition: all 0.2s ease;
-                        border: 1px solid #dc2626;
+                        transition: all 0.2s;
                     }
 
-                    .emergency-call-btn:hover {
+                    .call-emergency-btn:hover {
                         background: #b91c1c;
-                        transform: scale(1.02);
+                        transform: translateY(-1px);
+                        box-shadow: 0 4px 12px rgba(220, 38, 38, 0.3);
                     }
 
-                    /* Responsive */
-                    @media (max-width: 768px) {
-                        .dashboard-wrapper {
-                            padding: 80px 16px 40px;
-                        }
+                    /* Animations */
+                    @keyframes fadeIn {
+                        from { opacity: 0; transform: translateY(10px); }
+                        to { opacity: 1; transform: translateY(0); }
+                    }
 
-                        .welcome-title {
-                            font-size: 28px;
-                        }
+                    .animate {
+                        animation: fadeIn 0.5s ease forwards;
+                    }
 
-                        .welcome-subtitle {
-                            font-size: 16px;
-                        }
+                    /* Additional Red Theme Elements */
+                    .pillar-card .pillar-icon-box {
+                        box-shadow: 0 4px 8px rgba(220, 38, 38, 0.1);
+                    }
 
-                        .quote-text {
-                            font-size: 22px;
-                        }
-
-                        .emergency-bar {
-                            flex-direction: column;
-                            text-align: center;
-                        }
-
-                        .emergency-numbers {
-                            justify-content: center;
-                        }
+                    .stat-card .stat-icon {
+                        background: #fff5f5 !important;
                     }
                 `}
             </style>
 
-            <Navbar />
+            <div className="main-layout">
+                {/* Left Content */}
+                <div className="dashboard-content">
+                    <header className="header-section animate">
+                        <div className="welcome-banner">
+                            <h1>Welcome to RakshaNet 🛡️</h1>
+                            <p>Empowering you with AI-driven cyber safety, instant incident reporting, and professional legal & emotional support. You are not alone.</p>
+                        </div>
+                    </header>
 
-            <div className="dashboard-wrapper">
-                <div className="dashboard-container">
-                    {/* Welcome Section */}
-                    <div className="welcome-section">
-                        <h1 className="welcome-title">Welcome to RakshaNet 🛡️</h1>
-                        <p className="welcome-subtitle">
-                            Your safe space for reporting cyber incidents, seeking legal help,
-                            finding emotional support, and detecting online abuse with AI.
-                            You are not alone in this journey.
-                        </p>
+                    <div className="stats-grid animate" style={{ animationDelay: '0.1s' }}>
+                        <div className="stat-card">
+                            <div className="stat-header">
+                                <span className="stat-label">Total Cases</span>
+                                <div className="stat-icon" style={{ background: '#fff5f5', color: '#dc2626' }}>📁</div>
+                            </div>
+                            <div className="stat-value">{stats.total}</div>
+                        </div>
+                        <div className="stat-card">
+                            <div className="stat-header">
+                                <span className="stat-label">Resolved</span>
+                                <div className="stat-icon" style={{ background: '#fff5f5', color: '#10b981' }}>✅</div>
+                            </div>
+                            <div className="stat-value">{stats.resolved}</div>
+                        </div>
+                        <div className="stat-card">
+                            <div className="stat-header">
+                                <span className="stat-label">Consultations</span>
+                                <div className="stat-icon" style={{ background: '#fff5f5', color: '#f59e0b' }}>⚖️</div>
+                            </div>
+                            <div className="stat-value">{legalCount}</div>
+                        </div>
+                        <div className="stat-card">
+                            <div className="stat-header">
+                                <span className="stat-label">Support sessions</span>
+                                <div className="stat-icon" style={{ background: '#fff5f5', color: '#ec4899' }}>🧘</div>
+                            </div>
+                            <div className="stat-value">{therapyCount}</div>
+                        </div>
                     </div>
 
-                    {/* Quick Stats Grid */}
-                    <div className="quick-stats-grid">
-                        <div className="stat-widget" onClick={() => navigate("/cases")}>
-                            <div className="stat-number">{casesCount}</div>
-                            <div className="stat-label">Active Cases</div>
-                        </div>
-                        <div className="stat-widget" onClick={() => navigate("/legal")}>
-                            <div className="stat-number">{legalCount}</div>
-                            <div className="stat-label">Legal Consultations</div>
-                        </div>
-                        <div className="stat-widget" onClick={() => navigate("/therapy")}>
-                            <div className="stat-number">{therapyCount}</div>
-                            <div className="stat-label">Therapy Sessions</div>
-                        </div>
-                    </div>
-
-                    {/* Pillar Grid - Main Navigation */}
-                    <div className="pillar-grid">
-                        {pillars.map((pillar) => (
-                            <div
-                                key={pillar.name}
-                                className="pillar-card"
-                                onClick={() => navigate(pillar.path)}
-                            >
-                                {pillar.name === "AI Abuse Detection (NLP)" && (
-                                    <span className="nlp-badge">NEW</span>
-                                )}
-                                <div className="pillar-icon">{pillar.icon}</div>
-                                <h3>{pillar.name}</h3>
-                                <div className="pillar-description">{pillar.description}</div>
-                                <div className="pillar-arrow">→</div>
-                            </div>
-                        ))}
-                    </div>
-
-                    {/* Motivational Flashcards Section */}
-                    <div className="flashcard-section">
-                        <div className="section-header">
-                            <h2>🌸 Words of Encouragement</h2>
-                            <div className="flashcard-controls">
-                                <button className="flashcard-btn" onClick={prevQuote}>←</button>
-                                <button className="flashcard-btn" onClick={nextQuote}>→</button>
-                            </div>
-                        </div>
-
-                        {/* Featured Quote Card */}
-                        <div className="quote-card">
-                            <div className="quote-icon">💫</div>
-                            <div className="quote-title">{motivationalFlashcards[currentQuoteIndex].title}</div>
-                            <div className="quote-text">"{motivationalFlashcards[currentQuoteIndex].content}"</div>
-                            <div className="quote-progress">
-                                {currentQuoteIndex + 1} of {motivationalFlashcards.length}
-                            </div>
-                        </div>
-
-                        {/* All Flashcards Grid */}
-                        <div className="flashcards-grid">
-                            {motivationalFlashcards.map((card, index) => (
-                                <div key={index} className="flashcard">
-                                    <div className="flashcard-title">
-                                        {card.title}
+                    <section className="pillars-section animate" style={{ animationDelay: '0.2s' }}>
+                        <h2 className="section-title">Safety Solutions</h2>
+                        <div className="pillar-grid">
+                            {pillars.map((p, i) => (
+                                <div key={i} className="pillar-card" onClick={() => navigate(p.path)}>
+                                    {p.badge && <span className="badge">{p.badge}</span>}
+                                    <div className="pillar-icon-box" style={{ background: p.color }}>
+                                        {p.icon}
                                     </div>
-                                    <div className="flashcard-content">
-                                        {card.content}
-                                    </div>
+                                    <h3>{p.name}</h3>
+                                    <p>{p.description}</p>
                                 </div>
                             ))}
                         </div>
+                    </section>
+
+                    <section className="emergency-widget animate" style={{ animationDelay: '0.3s' }}>
+                        <h3>🚨 24/7 Emergency Response</h3>
+                        <div className="emergency-contacts">
+                            <div className="contact-pill">Helpline: 181</div>
+                            <div className="contact-pill">Cyber Crime: 1930</div>
+                            <div className="contact-pill">NCW: 7827170170</div>
+                            <div className="contact-pill">Police: 112</div>
+                        </div>
+                        <button className="call-emergency-btn" onClick={() => window.location.href = "tel:112"}>
+                            Call Urgent Emergency Services
+                        </button>
+                    </section>
+                </div>
+
+                {/* Right Sidebar */}
+                <aside className="sidebar-content animate" style={{ animationDelay: '0.4s' }}>
+                    <div className="side-card quote-display">
+                        <h4>{motivationalFlashcards[currentQuoteIndex].title}</h4>
+                        <p>"{motivationalFlashcards[currentQuoteIndex].content}"</p>
                     </div>
 
-                    {/* Emergency Contact Bar */}
-                    <div className="emergency-bar">
-                        <div className="emergency-text">
-                            <strong>🚨 24/7 Emergency Support</strong>
-                            <div className="emergency-numbers">
-                                <span className="emergency-number">Women's Helpline: 181</span>
-                                <span className="emergency-number">Cyber Crime: 1930</span>
-                                <span className="emergency-number">Police: 112</span>
-                            </div>
+                    <div className="side-card">
+                        <h2 className="section-title" style={{ fontSize: '18px', marginBottom: '20px' }}>Recent Activity</h2>
+                        <div className="activity-list">
+                            {recentCases.length > 0 ? (
+                                recentCases.map((c, i) => (
+                                    <div key={i} className="activity-item">
+                                        <div className="activity-icon">📄</div>
+                                        <div className="activity-info">
+                                            <h5>Case #{c.caseNumber}</h5>
+                                            <p>{c.status} • {new Date(c.createdAt).toLocaleDateString()}</p>
+                                        </div>
+                                    </div>
+                                ))
+                            ) : (
+                                <p style={{ fontSize: '14px', color: '#b91c1c', textAlign: 'center' }}>No recent activity found.</p>
+                            )}
                         </div>
-                        <button
-                            className="emergency-call-btn"
-                            onClick={() => window.location.href = "tel:112"}
-                        >
-                            Call Emergency
-                        </button>
+                        {recentCases.length > 0 && (
+                            <button
+                                onClick={() => navigate('/cases')}
+                                style={{ width: '100%', marginTop: '20px', padding: '10px', background: '#fff5f5', border: '1px solid #fee2e2', borderRadius: '10px', fontWeight: '700', cursor: 'pointer', fontSize: '13px', color: '#b91c1c' }}
+                            >
+                                View All Activity
+                            </button>
+                        )}
                     </div>
-                </div>
+
+                    <div className="side-card" style={{ background: '#fff5f5' }}>
+                        <h4 style={{ fontSize: '14px', fontWeight: '800', marginBottom: '12px', color: '#991b1b' }}>🔒 Safe & Confidential</h4>
+                        <p style={{ fontSize: '13px', color: '#b91c1c', lineHeight: '1.6' }}>
+                            All reports and consultations are end-to-end encrypted. Your identity is always protected unless you choose to reveal it.
+                        </p>
+                    </div>
+                </aside>
             </div>
-        </>
+        </div>
     );
 };
 

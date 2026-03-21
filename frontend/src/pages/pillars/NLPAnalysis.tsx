@@ -1,11 +1,13 @@
 import { useState } from "react";
-import Navbar from "../../components/Navbar";
+
+import api from "../../services/api";
 
 const NLPAnalysis = () => {
     const [inputText, setInputText] = useState("");
     const [sourceLang, setSourceLang] = useState("English");
-    const [targetLang, setTargetLang] = useState("Hindi");
-    const [translated, setTranslated] = useState("");
+    const [backendResult, setBackendResult] = useState<any>(null);
+    const [sessionId, setSessionId] = useState<string | null>(null);
+    const [loading, setLoading] = useState(false);
     const [imageResult, setImageResult] = useState<any>(null);
     const [selectedFile, setSelectedFile] = useState<File | null>(null);
 
@@ -23,108 +25,27 @@ const NLPAnalysis = () => {
         "Urdu"
     ];
 
-    // Demo abusive dictionary
-    const abusiveDictionary: any = {
-        English: {
-            slut: {
-                Hindi: "रंडी",
-                Telugu: "వేశ్య",
-                Tamil: "வெஷ்யை",
-                Kannada: "ವೇಶ್ಯೆ",
-                Malayalam: "വേശ്യ",
-                Marathi: "रंडी",
-                Gujarati: "વેશ્યા",
-                Bengali: "বেশ্যা",
-                Punjabi: "ਵੇਸ਼ਿਆ",
-                Urdu: "طوائف"
-            },
-            kill: {
-                Hindi: "मार डालूँगा",
-                Telugu: "చంపేస్తా",
-                Tamil: "கொன்றுவிடுவேன்",
-                Kannada: "ಕೊಲ್ಲುತ್ತೇನೆ",
-                Malayalam: "കൊല്ലും",
-                Marathi: "मारून टाकीन",
-                Gujarati: "मारी नાખીશ",
-                Bengali: "মেরে ফেলবো",
-                Punjabi: "ਮਾਰ ਦੇਵਾਂਗਾ",
-                Urdu: "مار دوں گا"
-            },
-            blackmail: {
-                Hindi: "ब्लैकमेल",
-                Telugu: "బ్లాక్ మెయిల్",
-                Tamil: "பிளாக்மெயில்",
-                Kannada: "ಬ್ಲ್ಯಾಕ್‌ಮೇಲ್",
-                Malayalam: "ബ്ലാക്ക്മെയിൽ",
-                Marathi: "ब्लॅकमेल",
-                Gujarati: "બ્લેકમેઈલ",
-                Bengali: "ব্ল্যাকমেল",
-                Punjabi: "ਬਲੈਕਮੇਲ",
-                Urdu: "بلیک میل"
-            },
-            fuck: {
-                Hindi: "चूतिया",
-                Telugu: "లౌడ్",
-                Tamil: "புண்ட",
-                Kannada: "ಸುಳ್ಳ",
-                Malayalam: "പട്ടി",
-                Marathi: "भोसडीचा",
-                Gujarati: "ચુતિયો",
-                Bengali: "চুদির",
-                Punjabi: "ਚੂਤ",
-                Urdu: "چوت"
-            },
-            rape: {
-                Hindi: "बलात्कार",
-                Telugu: "అత్యాచారం",
-                Tamil: "கற்பழிப்பு",
-                Kannada: "ಅತ್ಯಾಚಾರ",
-                Malayalam: "ബലാത്സംഗം",
-                Marathi: "बलात्कार",
-                Gujarati: "બળાત્કાર",
-                Bengali: "ধর্ষণ",
-                Punjabi: "ਬਲਾਤਕਾਰ",
-                Urdu: "عصمت دری"
-            }
-        }
-    };
-
-    const handleTranslate = () => {
-        const lower = inputText.toLowerCase().trim();
-
-        if (!inputText) {
-            alert("Please enter a word to translate");
+    const handleAnalyze = async () => {
+        if (!inputText.trim()) {
+            alert("Please enter text to analyze.");
             return;
         }
 
-        let translationFound = false;
-        let engKey = "";
+        try {
+            setLoading(true);
+            const res = await api.post("/nlp/analyze", {
+                texts: [inputText],
+                sessionId: sessionId
+            });
 
-        // If source is English, just find it directly
-        if (sourceLang === "English") {
-            if (abusiveDictionary["English"][lower]) {
-                engKey = lower;
-                translationFound = true;
-            }
-        } else {
-            // Find which english key has this word in the source language
-            for (const [key, translations] of Object.entries(abusiveDictionary["English"])) {
-                if ((translations as any)[sourceLang] === lower || (translations as any)[sourceLang] === inputText.trim()) {
-                    engKey = key;
-                    translationFound = true;
-                    break;
-                }
-            }
-        }
-
-        if (translationFound && engKey) {
-            if (targetLang === "English") {
-                setTranslated(engKey);
-            } else {
-                setTranslated(abusiveDictionary["English"][engKey][targetLang] || "Translation not available");
-            }
-        } else {
-            setTranslated("⚠️ Word not found in dictionary. Try: slut, kill, blackmail, fuck, rape (in English or their regional translations)");
+            console.log("NLP Backend Response:", res.data);
+            setBackendResult(res.data.results[0]);
+            setSessionId(res.data.sessionId);
+        } catch (error) {
+            console.error("NLP analysis failed", error);
+            alert("Analysis failed. See console.");
+        } finally {
+            setLoading(false);
         }
     };
 
@@ -177,8 +98,6 @@ const NLPAnalysis = () => {
 
     return (
         <>
-            <Navbar />
-
             <style>
                 {`
                     * {
@@ -189,7 +108,7 @@ const NLPAnalysis = () => {
 
                     body {
                         font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
-                        background-color: #f3f4f6;
+                        background: linear-gradient(135deg, #fef9e6 0%, #fff4e0 100%);
                     }
 
                     .nlp-wrapper {
@@ -198,7 +117,6 @@ const NLPAnalysis = () => {
                         padding-right: 40px;
                         padding-bottom: 80px;
                         min-height: 100vh;
-                        background-color: #f3f4f6;
                     }
 
                     .nlp-container {
@@ -214,7 +132,7 @@ const NLPAnalysis = () => {
                     .main-title {
                         font-size: 32px;
                         font-weight: 700;
-                        color: #111827;
+                        color: #b45309;
                         margin-bottom: 8px;
                         display: flex;
                         align-items: center;
@@ -222,7 +140,7 @@ const NLPAnalysis = () => {
                     }
 
                     .subtitle {
-                        color: #6b7280;
+                        color: #9b6b3e;
                         font-size: 16px;
                         line-height: 1.5;
                         margin-bottom: 24px;
@@ -230,30 +148,31 @@ const NLPAnalysis = () => {
 
                     /* Info Box */
                     .info-box {
-                        background: #e0f2fe;
-                        border-left: 4px solid #0891b2;
+                        background: #fff3d1;
+                        border-left: 4px solid #f59e0b;
                         padding: 16px 20px;
-                        border-radius: 8px;
+                        border-radius: 12px;
                         margin-bottom: 30px;
                     }
 
                     .info-box strong {
-                        color: #0369a1;
+                        color: #b45309;
                     }
 
                     /* Card */
                     .card {
                         background: white;
-                        border-radius: 16px;
+                        border-radius: 20px;
                         padding: 28px;
-                        border: 1px solid #e5e7eb;
-                        box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1);
+                        border: 1px solid #ffeaaf;
+                        box-shadow: 0 4px 12px rgba(245, 158, 11, 0.08);
                         margin-bottom: 30px;
                         transition: all 0.3s ease;
                     }
 
                     .card:hover {
-                        box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1);
+                        box-shadow: 0 10px 25px -5px rgba(245, 158, 11, 0.15);
+                        border-color: #fde047;
                     }
 
                     .card-header {
@@ -262,7 +181,7 @@ const NLPAnalysis = () => {
                         gap: 12px;
                         margin-bottom: 20px;
                         padding-bottom: 16px;
-                        border-bottom: 1px solid #e5e7eb;
+                        border-bottom: 2px solid #fef3c7;
                     }
 
                     .card-icon {
@@ -272,7 +191,7 @@ const NLPAnalysis = () => {
                     .card-title {
                         font-size: 20px;
                         font-weight: 600;
-                        color: #111827;
+                        color: #b45309;
                     }
 
                     /* Input Groups */
@@ -284,7 +203,7 @@ const NLPAnalysis = () => {
                         display: block;
                         font-size: 14px;
                         font-weight: 500;
-                        color: #4b5563;
+                        color: #9b6b3e;
                         margin-bottom: 8px;
                     }
 
@@ -292,16 +211,17 @@ const NLPAnalysis = () => {
                         width: 100%;
                         max-width: 400px;
                         padding: 12px 16px;
-                        border: 1px solid #e5e7eb;
-                        border-radius: 8px;
+                        border: 1px solid #fde047;
+                        border-radius: 12px;
                         font-size: 15px;
                         transition: all 0.2s ease;
+                        background: #fffef7;
                     }
 
                     .text-input:focus {
                         outline: none;
-                        border-color: #0891b2;
-                        box-shadow: 0 0 0 3px rgba(8, 145, 178, 0.1);
+                        border-color: #f59e0b;
+                        box-shadow: 0 0 0 3px rgba(245, 158, 11, 0.1);
                     }
 
                     .language-selector {
@@ -318,47 +238,50 @@ const NLPAnalysis = () => {
 
                     .select {
                         padding: 10px 16px;
-                        border: 1px solid #e5e7eb;
-                        border-radius: 8px;
+                        border: 1px solid #fde047;
+                        border-radius: 12px;
                         font-size: 14px;
-                        background: white;
+                        background: #fffef7;
                         min-width: 150px;
                         cursor: pointer;
                         appearance: none;
-                        background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%236b7280' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
+                        background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%23f59e0b' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
                         background-repeat: no-repeat;
                         background-position: right 12px center;
                         background-size: 16px;
                         padding-right: 40px;
+                        color: #b45309;
+                        font-weight: 500;
                     }
 
                     .select:focus {
                         outline: none;
-                        border-color: #0891b2;
-                    }
-
-                    .arrow-icon {
-                        font-size: 20px;
-                        color: #9ca3af;
+                        border-color: #f59e0b;
                     }
 
                     /* Buttons */
                     .primary-btn {
-                        background: #0891b2;
+                        background: #f59e0b;
                         color: white;
                         border: none;
                         padding: 12px 28px;
-                        border-radius: 8px;
+                        border-radius: 40px;
                         font-weight: 600;
                         font-size: 16px;
                         cursor: pointer;
                         transition: all 0.2s ease;
+                        box-shadow: 0 2px 8px rgba(245, 158, 11, 0.3);
                     }
 
                     .primary-btn:hover {
-                        background: #0e7490;
+                        background: #d97706;
                         transform: translateY(-1px);
-                        box-shadow: 0 4px 12px rgba(8, 145, 178, 0.3);
+                        box-shadow: 0 4px 12px rgba(245, 158, 11, 0.4);
+                    }
+
+                    .primary-btn:disabled {
+                        opacity: 0.6;
+                        cursor: not-allowed;
                     }
 
                     /* File Upload */
@@ -369,25 +292,25 @@ const NLPAnalysis = () => {
                     .file-input {
                         width: 100%;
                         padding: 40px 20px;
-                        border: 2px dashed #cbd5e1;
-                        border-radius: 8px;
-                        background: #f8fafc;
+                        border: 2px dashed #fde047;
+                        border-radius: 16px;
+                        background: #fffef7;
                         cursor: pointer;
                         transition: all 0.2s ease;
-                        color: #64748b;
+                        color: #b45309;
                         font-size: 14px;
                         text-align: center;
                     }
 
                     .file-input:hover {
-                        border-color: #0891b2;
-                        background: #f1f5f9;
+                        border-color: #f59e0b;
+                        background: #fffbe6;
                     }
 
                     .file-name {
                         margin-top: 8px;
                         font-size: 14px;
-                        color: #0891b2;
+                        color: #f59e0b;
                         display: flex;
                         align-items: center;
                         gap: 6px;
@@ -396,31 +319,31 @@ const NLPAnalysis = () => {
                     /* Translation Result */
                     .translation-result {
                         margin-top: 20px;
-                        background: #ecfdf5;
-                        border-left: 4px solid #10b981;
+                        background: #fffbeb;
+                        border-left: 4px solid #f59e0b;
                         padding: 20px;
-                        border-radius: 8px;
+                        border-radius: 12px;
                         animation: slideIn 0.3s ease;
                     }
 
                     .translation-text {
                         font-size: 18px;
                         font-weight: 500;
-                        color: #065f46;
+                        color: #b45309;
                         margin-top: 8px;
                         padding: 12px;
                         background: white;
-                        border-radius: 6px;
-                        border: 1px solid #a7f3d0;
+                        border-radius: 10px;
+                        border: 1px solid #fde047;
                     }
 
                     /* Image Result */
                     .image-result {
                         margin-top: 20px;
-                        background: #fef3c7;
+                        background: #fffbeb;
                         border-left: 4px solid #f59e0b;
                         padding: 20px;
-                        border-radius: 8px;
+                        border-radius: 12px;
                         animation: slideIn 0.3s ease;
                     }
 
@@ -439,17 +362,18 @@ const NLPAnalysis = () => {
                         display: flex;
                         gap: 20px;
                         font-size: 13px;
-                        color: #6b7280;
+                        color: #9b6b3e;
                         margin-bottom: 12px;
                     }
 
                     .extracted-text {
                         background: white;
                         padding: 16px;
-                        border-radius: 8px;
-                        border: 1px solid #fde68a;
+                        border-radius: 10px;
+                        border: 1px solid #fde047;
                         font-style: italic;
                         margin: 16px 0;
+                        color: #5e3a1a;
                     }
 
                     .words-container {
@@ -460,8 +384,8 @@ const NLPAnalysis = () => {
                     }
 
                     .word-tag {
-                        background: #fee2e2;
-                        color: #b91c1c;
+                        background: #fef3c7;
+                        color: #b45309;
                         padding: 6px 12px;
                         border-radius: 20px;
                         font-size: 13px;
@@ -480,14 +404,14 @@ const NLPAnalysis = () => {
                     .confidence-meter {
                         margin-top: 12px;
                         height: 6px;
-                        background: #e5e7eb;
+                        background: #fef3c7;
                         border-radius: 3px;
                         overflow: hidden;
                     }
 
                     .confidence-fill {
                         height: 100%;
-                        background: #0891b2;
+                        background: #f59e0b;
                         border-radius: 3px;
                         transition: width 0.3s ease;
                     }
@@ -495,16 +419,17 @@ const NLPAnalysis = () => {
                     /* Helper Text */
                     .helper-text {
                         font-size: 13px;
-                        color: #9ca3af;
+                        color: #b86f30;
                         margin-top: 8px;
                     }
 
                     .suggestion-box {
-                        background: #f3f4f6;
+                        background: #fffbeb;
                         padding: 12px;
-                        border-radius: 6px;
+                        border-radius: 10px;
                         font-size: 13px;
-                        color: #4b5563;
+                        color: #b45309;
+                        border: 1px solid #fde047;
                     }
 
                     /* Stats Grid */
@@ -518,9 +443,16 @@ const NLPAnalysis = () => {
                     .stat-card {
                         background: white;
                         padding: 20px;
-                        border-radius: 12px;
-                        border: 1px solid #e5e7eb;
+                        border-radius: 16px;
+                        border: 1px solid #fde047;
                         text-align: center;
+                        transition: all 0.2s ease;
+                    }
+
+                    .stat-card:hover {
+                        border-color: #f59e0b;
+                        transform: translateY(-2px);
+                        box-shadow: 0 4px 12px rgba(245, 158, 11, 0.1);
                     }
 
                     .stat-icon {
@@ -529,14 +461,14 @@ const NLPAnalysis = () => {
                     }
 
                     .stat-number {
-                        font-weight: 600;
-                        font-size: 18px;
-                        color: #111827;
+                        font-weight: 700;
+                        font-size: 24px;
+                        color: #b45309;
                     }
 
                     .stat-label {
                         font-size: 14px;
-                        color: #6b7280;
+                        color: #9b6b3e;
                     }
 
                     /* Responsive */
@@ -561,6 +493,10 @@ const NLPAnalysis = () => {
                         .result-meta {
                             flex-direction: column;
                             gap: 8px;
+                        }
+
+                        .text-input {
+                            max-width: 100%;
                         }
                     }
                 `}
@@ -608,20 +544,7 @@ const NLPAnalysis = () => {
                                     onChange={(e) => setSourceLang(e.target.value)}
                                     className="select"
                                 >
-                                    {languages.map((lang) => (
-                                        <option key={lang} value={lang}>{lang}</option>
-                                    ))}
-                                </select>
-                            </div>
-
-                            <span className="arrow-icon">→</span>
-
-                            <div className="select-wrapper">
-                                <select
-                                    value={targetLang}
-                                    onChange={(e) => setTargetLang(e.target.value)}
-                                    className="select"
-                                >
+                                    <option value="Auto-Detect">Auto-Detect</option>
                                     {languages.map((lang) => (
                                         <option key={lang} value={lang}>{lang}</option>
                                     ))}
@@ -630,22 +553,96 @@ const NLPAnalysis = () => {
                         </div>
 
                         <button
-                            onClick={handleTranslate}
+                            onClick={handleAnalyze}
                             className="primary-btn"
+                            disabled={loading}
                         >
-                            Translate
+                            {loading ? "Analyzing..." : "Analyze Text"}
                         </button>
 
-                        {translated && (
-                            <div className="translation-result">
-                                <strong>Translated Text:</strong>
+                        {backendResult && (
+
+                            <div
+                                className="translation-result"
+                                style={{
+                                    borderColor: getSeverityColor(
+                                        backendResult.severity
+                                    )
+                                }}
+                            >
+
+                                <div
+                                    style={{
+                                        display: "flex",
+                                        justifyContent: "space-between",
+                                        alignItems: "center",
+                                        flexWrap: "wrap",
+                                        gap: "12px"
+                                    }}
+                                >
+
+                                    <strong style={{ color: "#b45309" }}>Analysis Result:</strong>
+
+                                    <span
+                                        className="severity-badge"
+                                        style={{
+                                            marginTop: 0,
+                                            padding: "4px 12px",
+                                            background: getSeverityBg(
+                                                backendResult.severity
+                                            ),
+                                            color: getSeverityColor(
+                                                backendResult.severity
+                                            )
+                                        }}
+                                    >
+                                        {backendResult.severity}
+                                        {" "}
+                                        ({backendResult.score}%)
+                                    </span>
+
+                                </div>
+
+
                                 <div className="translation-text">
-                                    {translated}
+
+                                    <p>
+                                        <strong>Detected Language:</strong>
+                                        {" "}
+                                        {backendResult.language}
+                                    </p>
+
+                                    <p>
+                                        <strong>Threat Words:</strong>
+                                        {" "}
+                                        {backendResult.threatWords?.length > 0
+                                            ? backendResult.threatWords.join(", ")
+                                            : "None"}
+                                    </p>
+
+                                    <p>
+                                        <strong>Abusive Words:</strong>
+                                        {" "}
+                                        {backendResult.abusiveWords?.length > 0
+                                            ? backendResult.abusiveWords.join(", ")
+                                            : "None"}
+                                    </p>
+
+                                    <p>
+                                        <strong>AI Score:</strong>
+                                        {" "}
+                                        {backendResult.aiScore}
+                                    </p>
+
                                 </div>
-                                <div className="helper-text" style={{ marginTop: "8px" }}>
-                                    Source: {sourceLang} → Target: {targetLang}
+
+
+                                <div className="helper-text">
+                                    Session ID: {sessionId}
                                 </div>
+
                             </div>
+
                         )}
 
                         <div className="suggestion-box" style={{ marginTop: "16px" }}>
@@ -685,12 +682,12 @@ const NLPAnalysis = () => {
                                     <span>📦 {imageResult.fileSize} KB</span>
                                 </div>
 
-                                <h4 style={{ marginBottom: "8px" }}>🔍 Extracted Text:</h4>
+                                <h4 style={{ marginBottom: "8px", color: "#b45309" }}>🔍 Extracted Text:</h4>
                                 <div className="extracted-text">
                                     "{imageResult.extractedText}"
                                 </div>
 
-                                <h4 style={{ margin: "16px 0 8px" }}>⚠️ Detected Abusive Words:</h4>
+                                <h4 style={{ margin: "16px 0 8px", color: "#b45309" }}>⚠️ Detected Abusive Words:</h4>
                                 <div className="words-container">
                                     {imageResult.detectedWords.map((word: string, index: number) => (
                                         <span key={index} className="word-tag">{word}</span>
@@ -707,7 +704,7 @@ const NLPAnalysis = () => {
                                     >
                                         Severity: {imageResult.severity}
                                     </span>
-                                    <span style={{ fontSize: "14px", color: "#4b5563" }}>
+                                    <span style={{ fontSize: "14px", color: "#b86f30" }}>
                                         Confidence: {imageResult.confidence}%
                                     </span>
                                 </div>
@@ -724,7 +721,7 @@ const NLPAnalysis = () => {
                                         marginTop: "20px",
                                         padding: "12px",
                                         background: "#fee2e2",
-                                        borderRadius: "6px",
+                                        borderRadius: "10px",
                                         fontSize: "14px",
                                         color: "#b91c1c"
                                     }}>
@@ -736,7 +733,7 @@ const NLPAnalysis = () => {
                                         marginTop: "20px",
                                         padding: "12px",
                                         background: "#dcfce7",
-                                        borderRadius: "6px",
+                                        borderRadius: "10px",
                                         fontSize: "14px",
                                         color: "#166534"
                                     }}>

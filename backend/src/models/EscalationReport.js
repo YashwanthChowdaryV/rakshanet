@@ -8,6 +8,7 @@ const EscalationReportSchema = new mongoose.Schema(
         incidentTime: String,
         location: String,
         description: String,
+        multipleInputs: [String],
 
         complainant: {
             name: String,

@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import Navbar from "../../components/Navbar";
+
 import api from "../../services/api";
 
 const LinkedInMisconductReport = () => {
@@ -40,12 +40,12 @@ const LinkedInMisconductReport = () => {
         try {
             const res = await api.get("/email/logs");
             setEmailLogs(res.data);
-            
+
             // Calculate real stats based on logs (or just simple mocked response rates)
             setStats({
                 totalEmailsSent: res.data.length,
                 companiesContacted: new Set(res.data.map((l: any) => l.companyName)).size,
-                responseRate: res.data.length > 0 ? 85 : 0, 
+                responseRate: res.data.length > 0 ? 85 : 0,
                 lastWeekCount: res.data.length > 0 ? res.data.length : 0,
             });
         } catch (error) {
@@ -123,8 +123,6 @@ const LinkedInMisconductReport = () => {
 
     return (
         <>
-            <Navbar />
-
             <style>
                 {`
                     * {
@@ -135,7 +133,24 @@ const LinkedInMisconductReport = () => {
 
                     body {
                         font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
-                        background-color: #f3f4f6;
+                        background-image: url('https://cdn.prod.website-files.com/620e6ffad88b8a37d9e5c2d1/65a5392cf2639a85259f454a_5%20motivi%20per%20usare%20linkedin.png');
+                        background-size: cover;
+                        background-position: center;
+                        background-repeat: no-repeat;
+                        background-attachment: fixed;
+                        position: relative;
+                    }
+
+                    /* LinkedIn-themed overlay for better readability */
+                    body::before {
+                        content: '';
+                        position: fixed;
+                        top: 0;
+                        left: 0;
+                        right: 0;
+                        bottom: 0;
+                        background: linear-gradient(135deg, rgba(10, 102, 194, 0.05) 0%, rgba(255, 255, 255, 0.92) 100%);
+                        z-index: -1;
                     }
 
                     .linkedin-wrapper {
@@ -144,7 +159,8 @@ const LinkedInMisconductReport = () => {
                         padding-right: 40px;
                         padding-bottom: 80px;
                         min-height: 100vh;
-                        background: linear-gradient(135deg, #f3f4f6 0%, #ffffff 100%);
+                        position: relative;
+                        z-index: 1;
                     }
 
                     .linkedin-container {
@@ -160,7 +176,7 @@ const LinkedInMisconductReport = () => {
                     .main-title {
                         font-size: 32px;
                         font-weight: 700;
-                        color: #0a66c2;
+                        color: #000000ff;
                         margin-bottom: 8px;
                         display: flex;
                         align-items: center;
@@ -168,7 +184,7 @@ const LinkedInMisconductReport = () => {
                     }
 
                     .subtitle {
-                        color: #6b7280;
+                        color: #081a32ff;
                         font-size: 16px;
                         line-height: 1.5;
                         margin-bottom: 24px;
@@ -472,6 +488,18 @@ const LinkedInMisconductReport = () => {
                         font-weight: 500;
                     }
 
+                    /* Trust Badges */
+                    .trust-badges {
+                        display: flex;
+                        justify-content: center;
+                        gap: 30px;
+                        margin-top: 30px;
+                        padding: 20px;
+                        background: white;
+                        border-radius: 12px;
+                        border: 1px solid #e5e7eb;
+                    }
+
                     /* Responsive */
                     @media (max-width: 768px) {
                         .linkedin-wrapper {
@@ -493,6 +521,12 @@ const LinkedInMisconductReport = () => {
 
                         .activity-company {
                             min-width: auto;
+                        }
+
+                        .trust-badges {
+                            flex-direction: column;
+                            align-items: center;
+                            gap: 16px;
                         }
                     }
                 `}
@@ -702,16 +736,7 @@ const LinkedInMisconductReport = () => {
                     </div>
 
                     {/* Trust Badges */}
-                    <div style={{
-                        display: "flex",
-                        justifyContent: "center",
-                        gap: "30px",
-                        marginTop: "30px",
-                        padding: "20px",
-                        background: "white",
-                        borderRadius: "12px",
-                        border: "1px solid #e5e7eb"
-                    }}>
+                    <div className="trust-badges">
                         <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
                             <span style={{ fontSize: "20px" }}>🔒</span>
                             <span style={{ fontSize: "14px", color: "#4b5563" }}>100% Confidential</span>

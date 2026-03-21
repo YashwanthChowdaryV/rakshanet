@@ -90,6 +90,7 @@ Concerned Individual
             sender: studentId,
             companyName,
             hrEmail,
+            recipient: hrEmail,
             subject,
             content: text,
             offenderName,
@@ -135,5 +136,88 @@ exports.getMyEmailLogs = async (req, res) => {
     } catch (error) {
         console.error("Fetch Email Logs Error:", error);
         return res.status(500).json({ message: "Internal Server Error" });
+    }
+};
+
+exports.sendAlertEmail = async (req, res) => {
+    try {
+        const { recipient, subject, content, caseId } = req.body;
+        const userId = req.user?.id;
+
+        if (!userId) return res.status(401).json({ success: false, message: "Unauthorized" });
+        if (!recipient || !subject || !content) {
+            return res.status(400).json({ success: false, message: "Missing fields" });
+        }
+
+        const transporter = nodemailer.createTransport({
+            service: "gmail",
+            auth: { user: process.env.EMAIL_USER, pass: process.env.EMAIL_PASS },
+        });
+
+        let status = "Sent";
+        let errorMessage = null;
+
+        try {
+            await transporter.sendMail({
+                from: process.env.EMAIL_USER,
+                to: recipient,
+                subject,
+                text: content,
+            });
+        } catch (mailError) {
+            status = "Failed";
+            errorMessage = mailError.message;
+        }
+
+        const newLog = await EmailLog.create({
+            sender: userId,
+            recipient,
+            subject,
+            content,
+            status,
+            error: errorMessage,
+            caseId
+        });
+
+        if (status === "Failed") return res.status(500).json({ success: false, error: errorMessage });
+        res.json({ success: true, message: "Alert email sent", log: newLog });
+
+    } catch (error) {
+        res.status(500).json({ success: false, message: "Server Error" });
+    }
+};
+
+exports.retryFailedEmail = async (req, res) => {
+    try {
+        const { logId } = req.params;
+        const log = await EmailLog.findById(logId);
+        if (!log || log.status === "Sent") {
+            return res.status(400).json({ success: false, message: "Invalid or already sent log" });
+        }
+
+        const transporter = nodemailer.createTransport({
+            service: "gmail",
+            auth: { user: process.env.EMAIL_USER, pass: process.env.EMAIL_PASS },
+        });
+
+        try {
+            await transporter.sendMail({
+                from: process.env.EMAIL_USER,
+                to: log.recipient,
+                subject: log.subject,
+                text: log.content,
+            });
+            log.status = "Sent";
+            log.error = null;
+        } catch (err) {
+            log.error = err.message;
+        }
+        
+        log.retryCount += 1;
+        await log.save();
+
+        res.json({ success: log.status === "Sent", log });
+    } catch (error) {
+        res.status(500).json({ success: false, message: "Server Error" });
     }
 };

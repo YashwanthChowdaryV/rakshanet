@@ -1,10 +1,11 @@
 import { useState, useEffect } from "react";
-import Navbar from "../../components/Navbar";
+
 import api from "../../services/api";
 
 const LegalConsultation = () => {
     const [showModal, setShowModal] = useState(false);
     const [selectedLawyer, setSelectedLawyer] = useState("");
+    const [selectedLawyerId, setSelectedLawyerId] = useState("");
     const [selectedCase, setSelectedCase] = useState("");
     const [consultationType, setConsultationType] = useState("Free");
     const [preferredDate, setPreferredDate] = useState("");
@@ -16,12 +17,24 @@ const LegalConsultation = () => {
     const [loading, setLoading] = useState(false);
     const [showSections, setShowSections] = useState(false);
 
-    const lawyers = [
-        { name: "Adv. Priya Mehta", specialization: "Cyber Law Specialist (Women's Safety)", rating: "4.9" },
-        { name: "Adv. Rahul Sharma", specialization: "Criminal & Cyber Law", rating: "4.8" },
-        { name: "Adv. Sneha Reddy", specialization: "IT Act & Women's Rights", rating: "4.7" },
-        { name: "Adv. Vikram Singh", specialization: "Constitutional & Cyber Law", rating: "4.9" },
-    ];
+    const [lawyersList, setLawyersList] = useState<any[]>([]);
+
+    const fetchLawyers = async () => {
+        try {
+            const res = await api.get("/legal/lawyers");
+            if (res.data.length > 0) {
+                const mapped = res.data.map((user: any) => ({
+                    id: user._id,
+                    name: user.name,
+                    specialization: user.profile?.department || "General Cyber Law",
+                    rating: "4.8",
+                }));
+                setLawyersList(mapped);
+            }
+        } catch (error) {
+            console.error("Fetch lawyers error:", error);
+        }
+    };
 
     // ================= WOMEN'S CYBER LAW SECTIONS =================
     const womensLawSections = [
@@ -72,7 +85,8 @@ const LegalConsultation = () => {
     const fetchConsultations = async () => {
         try {
             const res = await api.get("/legal/my");
-            setConsultations(res.data);
+            const data = Array.isArray(res.data) ? res.data : (res.data.consultations || []);
+            setConsultations(data);
         } catch (error) {
             console.error("Fetch error:", error);
         }
@@ -81,7 +95,8 @@ const LegalConsultation = () => {
     const fetchUserCases = async () => {
         try {
             const res = await api.get("/cases");
-            setUserCases(res.data.cases || []);
+            const fetchedCases = Array.isArray(res.data) ? res.data : (res.data.cases || []);
+            setUserCases(fetchedCases);
         } catch (error) {
             console.error("Fetch cases error:", error);
         }
@@ -90,6 +105,7 @@ const LegalConsultation = () => {
     useEffect(() => {
         fetchConsultations();
         fetchUserCases();
+        fetchLawyers();
     }, []);
 
     const generateFakePDF = (c: any) => {
@@ -107,6 +123,7 @@ const LegalConsultation = () => {
 
             await api.post("/legal/request", {
                 lawyerName: selectedLawyer || "Any Available Lawyer",
+                lawyerId: selectedLawyerId || undefined,
                 caseNumber: selectedCase,
                 consultationType,
                 preferredDate,
@@ -119,7 +136,6 @@ const LegalConsultation = () => {
             setShowModal(false);
             fetchConsultations();
 
-            // Reset form
             setSelectedCase("");
             setPreferredDate("");
             setPreferredTime("");
@@ -133,11 +149,9 @@ const LegalConsultation = () => {
 
     return (
         <>
-            <Navbar />
-
             <style>
                 {`
-                    /* ========== Global Styles ========== */
+                    /* ========== BLACK & WHITE CLASSIC THEME ========== */
                     * {
                         margin: 0;
                         padding: 0;
@@ -145,8 +159,8 @@ const LegalConsultation = () => {
                     }
 
                     body {
-                        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
-                        background-color: #f3f4f6;
+                        font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Times New Roman', serif;
+                        background: #f5f5f5;
                     }
 
                     .legal-wrapper {
@@ -155,95 +169,99 @@ const LegalConsultation = () => {
                         padding-right: 40px;
                         padding-bottom: 80px;
                         min-height: 100vh;
-                        background-color: #f3f4f6;
+                        background: linear-gradient(135deg, #fafafa 0%, #f0f0f0 100%);
                     }
 
                     .legal-container {
-                        max-width: 1200px;
+                        max-width: 1400px;
                         margin: 0 auto;
                     }
 
-                    /* Header */
-                    .main-title {
-                        font-size: 32px;
-                        font-weight: 700;
-                        color: #111827;
-                        margin-bottom: 8px;
+                    /* ========== HERO SECTION WITH IMAGE SIDE BY SIDE ========== */
+                    .hero-section {
+                        display: grid;
+                        grid-template-columns: 1fr 1fr;
+                        gap: 48px;
+                        margin-bottom: 60px;
+                        background: #ffffff;
+                        border-radius: 24px;
+                        overflow: hidden;
+                        box-shadow: 0 20px 40px -12px rgba(0, 0, 0, 0.1);
+                        border: 1px solid #e0e0e0;
+                    }
+
+                    .hero-content {
+                        padding: 48px;
                         display: flex;
-                        align-items: center;
-                        gap: 10px;
+                        flex-direction: column;
+                        justify-content: center;
                     }
 
-                    .subtitle {
-                        color: #6b7280;
-                        font-size: 16px;
-                        line-height: 1.5;
-                        margin-bottom: 24px;
+                    .hero-content h1 {
+                        font-size: 42px;
+                        font-weight: 700;
+                        color: #000000;
+                        margin-bottom: 16px;
+                        letter-spacing: -0.02em;
+                        line-height: 1.2;
                     }
 
-                    /* Important Notice */
+                    .hero-content .subtitle {
+                        font-size: 18px;
+                        color: #4a4a4a;
+                        line-height: 1.6;
+                        margin-bottom: 32px;
+                    }
+
+                    .hero-image {
+                        background-image: url('https://adityaandco.com/wp-content/uploads/2025/08/Civil-Lawyers-1024x717.webp');
+                        background-size: cover;
+                        background-position: center;
+                        min-height: 100%;
+                        width: 100%;
+                    }
+
+                    @media (max-width: 768px) {
+                        .hero-section {
+                            grid-template-columns: 1fr;
+                        }
+                        .hero-image {
+                            min-height: 280px;
+                            order: -1;
+                        }
+                        .hero-content {
+                            padding: 32px;
+                        }
+                        .hero-content h1 {
+                            font-size: 32px;
+                        }
+                        .hero-content .subtitle {
+                            font-size: 16px;
+                        }
+                    }
+
+                    /* ========== NOTICE BOX ========== */
                     .notice-box {
-                        background: #fff3cd;
-                        border-left: 4px solid #ffc107;
-                        padding: 16px 20px;
-                        border-radius: 8px;
-                        margin-bottom: 30px;
+                        background: #fef9e6;
+                        border-left: 4px solid #d4a373;
+                        padding: 20px 24px;
+                        border-radius: 12px;
+                        margin-bottom: 40px;
+                        color: #5e4b2b;
                     }
 
                     .notice-box strong {
-                        color: #856404;
+                        color: #9c6e3e;
                     }
 
-                    /* Free Policy Banner */
-                    .policy-banner {
-                        background: #ecfdf5;
-                        border-left: 4px solid #10b981;
-                        padding: 24px;
-                        border-radius: 8px;
-                        margin-bottom: 40px;
-                        display: flex;
-                        justify-content: space-between;
-                        align-items: center;
-                        flex-wrap: wrap;
-                        gap: 20px;
-                    }
-
-                    .policy-banner h3 {
-                        font-size: 20px;
-                        font-weight: 600;
-                        color: #047857;
-                        margin-bottom: 8px;
-                    }
-
-                    .policy-banner p {
-                        color: #065f46;
-                    }
-
-                    .request-btn {
-                        background: #2563eb;
-                        color: white;
-                        padding: 12px 24px;
-                        border: none;
-                        border-radius: 8px;
-                        font-weight: 600;
-                        cursor: pointer;
-                        transition: all 0.2s ease;
-                        white-space: nowrap;
-                    }
-
-                    .request-btn:hover {
-                        background: #1d4ed8;
-                        transform: translateY(-1px);
-                        box-shadow: 0 4px 12px rgba(37, 99, 235, 0.2);
-                    }
-
-                    /* Women's Law Section */
+                    /* ========== WOMEN'S LAW SECTION ========== */
                     .law-section {
-                        background: white;
-                        border-radius: 12px;
-                        padding: 24px;
-                        margin-bottom: 40px;
-                        border: 1px solid #e5e7eb;
+                        background: #ffffff;
+                        border-radius: 20px;
+                        padding: 32px;
+                        margin-bottom: 48px;
+                        border: 1px solid #eaeaea;
+                        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.03);
                     }
 
                     .law-header {
@@ -257,15 +275,15 @@ const LegalConsultation = () => {
                     .law-header h2 {
                         font-size: 24px;
                         font-weight: 600;
-                        color: #be185d;
+                        color: #1a1a1a;
                         display: flex;
                         align-items: center;
                         gap: 10px;
                     }
 
                     .toggle-icon {
-                        font-size: 24px;
-                        color: #be185d;
+                        font-size: 20px;
+                        color: #6b6b6b;
                         transition: transform 0.3s ease;
                     }
 
@@ -275,29 +293,31 @@ const LegalConsultation = () => {
 
                     .law-grid {
                         display: grid;
-                        grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
-                        gap: 20px;
-                        margin-top: 20px;
+                        grid-template-columns: repeat(auto-fill, minmax(360px, 1fr));
+                        gap: 24px;
+                        margin-top: 28px;
                     }
 
                     .law-card {
-                        background: #fdf2f8;
-                        border-radius: 10px;
+                        background: #fafafa;
+                        border-radius: 16px;
                         padding: 20px;
-                        border-left: 4px solid #be185d;
+                        border-left: 3px solid #2c2c2c;
                     }
 
                     .law-act {
                         font-size: 16px;
-                        font-weight: 600;
-                        color: #be185d;
-                        margin-bottom: 12px;
+                        font-weight: 700;
+                        color: #1e1e1e;
+                        margin-bottom: 16px;
+                        padding-bottom: 8px;
+                        border-bottom: 1px solid #e0e0e0;
                     }
 
                     .law-section-item {
-                        margin-bottom: 16px;
+                        margin-bottom: 14px;
                         padding-bottom: 12px;
-                        border-bottom: 1px solid #fbcfe8;
+                        border-bottom: 1px solid #ededed;
                     }
 
                     .law-section-item:last-child {
@@ -308,275 +328,310 @@ const LegalConsultation = () => {
 
                     .section-number {
                         font-weight: 700;
-                        color: #9d174d;
-                        font-size: 15px;
+                        color: #3a3a3a;
+                        font-size: 14px;
+                        font-family: monospace;
                     }
 
                     .section-desc {
-                        font-size: 14px;
-                        color: #4b5563;
+                        font-size: 13px;
+                        color: #4a4a4a;
                         margin: 4px 0;
                         line-height: 1.5;
                     }
 
                     .section-punishment {
-                        font-size: 13px;
-                        color: #b91c1c;
-                        background: #fee2e2;
+                        font-size: 12px;
+                        color: #8b3c3c;
+                        background: #f5e8e8;
                         padding: 4px 8px;
                         border-radius: 4px;
                         display: inline-block;
-                        margin-top: 4px;
+                        margin-top: 6px;
+                        font-family: monospace;
                     }
 
                     .emergency-contact {
-                        background: #fef2f2;
-                        border: 1px solid #fecaca;
-                        border-radius: 8px;
-                        padding: 16px;
-                        margin-top: 20px;
+                        background: #f2f2f2;
+                        border: 1px solid #e0e0e0;
+                        border-radius: 12px;
+                        padding: 20px;
+                        margin-top: 24px;
                         display: flex;
-                        gap: 20px;
+                        gap: 24px;
                         flex-wrap: wrap;
                     }
 
                     .emergency-item {
                         display: flex;
                         align-items: center;
-                        gap: 10px;
+                        gap: 8px;
+                        font-size: 14px;
                     }
 
                     .emergency-item span {
-                        font-weight: 600;
-                        color: #991b1b;
+                        font-weight: 700;
+                        color: #2c2c2c;
                     }
 
-                    /* Section Headers */
-                    .section-header {
-                        font-size: 24px;
-                        font-weight: 600;
-                        color: #111827;
-                        margin: 40px 0 20px 0;
+                    /* ========== POLICY BANNER ========== */
+                    .policy-banner {
+                        background: #1e1e1e;
+                        border-radius: 20px;
+                        padding: 32px;
+                        margin-bottom: 48px;
                         display: flex;
+                        justify-content: space-between;
                         align-items: center;
-                        gap: 10px;
+                        flex-wrap: wrap;
+                        gap: 24px;
+                        color: #ffffff;
                     }
 
-                    /* Lawyers Grid */
+                    .policy-banner h3 {
+                        font-size: 22px;
+                        font-weight: 600;
+                        margin-bottom: 8px;
+                    }
+
+                    .policy-banner p {
+                        color: #cccccc;
+                        font-size: 14px;
+                    }
+
+                    .request-btn {
+                        background: #ffffff;
+                        color: #1e1e1e;
+                        padding: 12px 28px;
+                        border: none;
+                        border-radius: 40px;
+                        font-weight: 600;
+                        cursor: pointer;
+                        transition: all 0.2s ease;
+                        white-space: nowrap;
+                        font-size: 15px;
+                    }
+
+                    .request-btn:hover {
+                        background: #f0f0f0;
+                        transform: translateY(-2px);
+                    }
+
+                    /* ========== SECTION HEADERS ========== */
+                    .section-header {
+                        font-size: 28px;
+                        font-weight: 600;
+                        color: #1a1a1a;
+                        margin: 48px 0 24px 0;
+                        padding-bottom: 12px;
+                        border-bottom: 2px solid #e0e0e0;
+                        letter-spacing: -0.3px;
+                    }
+
+                    /* ========== LAWYERS GRID ========== */
                     .lawyer-grid {
                         display: grid;
                         grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
                         gap: 24px;
-                        margin-bottom: 50px;
+                        margin-bottom: 48px;
                     }
 
                     .lawyer-card {
-                        background: white;
-                        padding: 24px;
-                        border-radius: 12px;
-                        box-shadow: 0 1px 3px rgba(0,0,0,0.1);
-                        border: 1px solid #e5e7eb;
-                        transition: all 0.2s ease;
+                        background: #ffffff;
+                        padding: 28px;
+                        border-radius: 20px;
+                        border: 1px solid #eaeaea;
+                        transition: all 0.25s ease;
                     }
 
                     .lawyer-card:hover {
-                        box-shadow: 0 4px 12px rgba(0,0,0,0.1);
-                        transform: translateY(-2px);
+                        border-color: #cccccc;
+                        box-shadow: 0 8px 20px rgba(0, 0, 0, 0.05);
+                        transform: translateY(-3px);
                     }
 
                     .lawyer-name {
                         font-size: 18px;
-                        font-weight: 600;
-                        color: #111827;
-                        margin-bottom: 4px;
+                        font-weight: 700;
+                        color: #000000;
+                        margin-bottom: 6px;
                     }
 
                     .lawyer-specialization {
-                        font-size: 14px;
-                        color: #6b7280;
-                        margin-bottom: 8px;
+                        font-size: 13px;
+                        color: #6b6b6b;
+                        margin-bottom: 12px;
+                        letter-spacing: 0.3px;
                     }
 
                     .lawyer-rating {
                         display: inline-block;
-                        background: #fbbf24;
-                        padding: 4px 8px;
-                        border-radius: 4px;
+                        background: #f5f5f5;
+                        padding: 4px 10px;
+                        border-radius: 20px;
                         font-weight: 600;
-                        font-size: 13px;
-                        margin-bottom: 16px;
+                        font-size: 12px;
+                        margin-bottom: 20px;
+                        color: #4a4a4a;
                     }
 
                     .consult-btn {
                         width: 100%;
-                        background: #2563eb;
+                        background: #1e1e1e;
                         color: white;
                         border: none;
-                        padding: 10px;
-                        border-radius: 6px;
+                        padding: 12px;
+                        border-radius: 40px;
                         font-weight: 500;
                         cursor: pointer;
                         transition: all 0.2s ease;
+                        font-size: 14px;
                     }
 
                     .consult-btn:hover {
-                        background: #1d4ed8;
+                        background: #3a3a3a;
                     }
 
-                    /* Consultations List */
+                    /* ========== CONSULTATIONS LIST ========== */
                     .consultations-list {
                         margin-top: 20px;
                     }
 
                     .consultation-card {
-                        background: white;
-                        padding: 20px;
+                        background: #ffffff;
+                        padding: 24px;
                         margin-bottom: 12px;
-                        border-radius: 10px;
-                        border: 1px solid #e5e7eb;
+                        border-radius: 16px;
+                        border: 1px solid #eaeaea;
                         display: flex;
                         justify-content: space-between;
                         align-items: center;
+                        flex-wrap: wrap;
+                        gap: 16px;
                         transition: all 0.2s ease;
                     }
 
                     .consultation-card:hover {
-                        border-color: #2563eb;
+                        border-color: #d0d0d0;
+                        background: #fefefe;
                     }
 
                     .consultation-info h4 {
                         font-size: 16px;
-                        font-weight: 600;
-                        color: #111827;
-                        margin-bottom: 6px;
+                        font-weight: 700;
+                        color: #1a1a1a;
+                        margin-bottom: 8px;
                     }
 
                     .consultation-details {
                         display: flex;
                         gap: 20px;
-                        font-size: 14px;
-                        color: #6b7280;
+                        font-size: 13px;
+                        color: #6b6b6b;
                         flex-wrap: wrap;
                     }
 
                     .status-badge {
-                        padding: 6px 12px;
-                        border-radius: 20px;
-                        font-size: 13px;
-                        font-weight: 500;
+                        padding: 6px 14px;
+                        border-radius: 40px;
+                        font-size: 12px;
+                        font-weight: 600;
                     }
 
                     .status-pending {
-                        background: #fef3c7;
-                        color: #92400e;
+                        background: #f5f0e6;
+                        color: #9c6e3e;
                     }
 
                     .status-confirmed {
-                        background: #dbeafe;
-                        color: #1e40af;
+                        background: #e6f0f5;
+                        color: #2c6b8f;
                     }
 
                     .status-completed {
-                        background: #d1fae5;
-                        color: #065f46;
+                        background: #e6f5ed;
+                        color: #2f6b47;
                     }
 
                     .status-cancelled {
-                        background: #fee2e2;
-                        color: #991b1b;
+                        background: #f5e6e6;
+                        color: #9c3e3e;
                     }
 
-                    /* Empty State */
                     .empty-state {
                         text-align: center;
-                        padding: 40px;
-                        background: white;
-                        border-radius: 12px;
-                        color: #9ca3af;
-                        border: 1px dashed #e5e7eb;
+                        padding: 48px;
+                        background: #ffffff;
+                        border-radius: 20px;
+                        color: #9c9c9c;
+                        border: 1px solid #eaeaea;
                     }
 
-                    /* Modal */
+                    /* ========== MODAL ========== */
                     .modal-overlay {
                         position: fixed;
                         top: 0;
                         left: 0;
                         width: 100%;
                         height: 100%;
-                        background: rgba(0, 0, 0, 0.5);
+                        background: rgba(0, 0, 0, 0.7);
                         display: flex;
                         justify-content: center;
                         align-items: center;
                         z-index: 1000;
-                        animation: fadeIn 0.3s ease;
-                    }
-
-                    @keyframes fadeIn {
-                        from { opacity: 0; }
-                        to { opacity: 1; }
                     }
 
                     .modal-content {
-                        background: white;
-                        padding: 32px;
-                        border-radius: 16px;
-                        width: 500px;
+                        background: #ffffff;
+                        padding: 36px;
+                        border-radius: 28px;
+                        width: 550px;
                         max-width: 90%;
                         max-height: 90vh;
                         overflow-y: auto;
-                        animation: slideUp 0.3s ease;
-                    }
-
-                    @keyframes slideUp {
-                        from {
-                            transform: translateY(20px);
-                            opacity: 0;
-                        }
-                        to {
-                            transform: translateY(0);
-                            opacity: 1;
-                        }
                     }
 
                     .modal-content h3 {
-                        font-size: 22px;
-                        font-weight: 600;
-                        color: #111827;
+                        font-size: 24px;
+                        font-weight: 700;
+                        color: #000000;
                         margin-bottom: 24px;
-                        border-bottom: 1px solid #e5e7eb;
-                        padding-bottom: 12px;
+                        border-bottom: 2px solid #eaeaea;
+                        padding-bottom: 16px;
                     }
 
                     .form-group {
-                        margin-bottom: 16px;
+                        margin-bottom: 20px;
                     }
 
                     .form-label {
                         display: block;
-                        font-size: 14px;
-                        font-weight: 500;
-                        color: #4b5563;
-                        margin-bottom: 6px;
+                        font-size: 13px;
+                        font-weight: 600;
+                        color: #4a4a4a;
+                        margin-bottom: 8px;
+                        text-transform: uppercase;
+                        letter-spacing: 0.5px;
                     }
 
                     .form-input,
                     .form-select,
                     .form-textarea {
                         width: 100%;
-                        padding: 12px;
-                        border: 1px solid #e5e7eb;
-                        border-radius: 8px;
+                        padding: 12px 16px;
+                        border: 1px solid #e0e0e0;
+                        border-radius: 12px;
                         font-size: 15px;
-                        transition: all 0.2s ease;
                         font-family: inherit;
+                        transition: all 0.2s;
                     }
 
                     .form-input:focus,
                     .form-select:focus,
                     .form-textarea:focus {
                         outline: none;
-                        border-color: #2563eb;
-                        box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+                        border-color: #6b6b6b;
+                        box-shadow: 0 0 0 3px rgba(0, 0, 0, 0.05);
                     }
 
                     .form-textarea {
@@ -587,95 +642,58 @@ const LegalConsultation = () => {
                     .modal-actions {
                         display: flex;
                         gap: 12px;
-                        margin-top: 24px;
+                        margin-top: 28px;
                     }
 
                     .submit-btn {
                         flex: 2;
-                        background: #16a34a;
+                        background: #1e1e1e;
                         color: white;
                         border: none;
-                        padding: 12px;
-                        border-radius: 8px;
+                        padding: 14px;
+                        border-radius: 40px;
                         font-weight: 600;
                         cursor: pointer;
-                        transition: all 0.2s ease;
                     }
 
                     .submit-btn:hover:not(:disabled) {
-                        background: #15803d;
-                    }
-
-                    .submit-btn:disabled {
-                        opacity: 0.6;
-                        cursor: not-allowed;
+                        background: #3a3a3a;
                     }
 
                     .cancel-btn {
                         flex: 1;
-                        background: #f3f4f6;
-                        color: #4b5563;
-                        border: 1px solid #e5e7eb;
-                        padding: 12px;
-                        border-radius: 8px;
+                        background: #f5f5f5;
+                        color: #4a4a4a;
+                        border: 1px solid #e0e0e0;
+                        padding: 14px;
+                        border-radius: 40px;
                         font-weight: 500;
                         cursor: pointer;
-                        transition: all 0.2s ease;
                     }
 
-                    .cancel-btn:hover {
-                        background: #e5e7eb;
-                    }
-
-                    /* Help Text */
                     .help-text {
                         font-size: 12px;
-                        color: #9ca3af;
-                        margin-top: 4px;
+                        color: #9c9c9c;
+                        margin-top: 6px;
                     }
 
-                    /* Responsive */
                     @media (max-width: 768px) {
                         .legal-wrapper {
-                            padding: 80px 16px 40px;
+                            padding: 80px 20px 40px;
                         }
-
-                        .main-title {
-                            font-size: 28px;
-                        }
-
-                        .policy-banner {
-                            flex-direction: column;
-                            align-items: flex-start;
-                        }
-
-                        .request-btn {
-                            width: 100%;
-                            text-align: center;
-                        }
-
-                        .lawyer-grid {
-                            grid-template-columns: 1fr;
-                        }
-
                         .law-grid {
                             grid-template-columns: 1fr;
                         }
-
                         .consultation-card {
                             flex-direction: column;
                             align-items: flex-start;
-                            gap: 12px;
                         }
-
-                        .consultation-details {
+                        .policy-banner {
                             flex-direction: column;
-                            gap: 6px;
+                            text-align: center;
                         }
-
-                        .emergency-contact {
-                            flex-direction: column;
-                            gap: 12px;
+                        .request-btn {
+                            width: 100%;
                         }
                     }
                 `}
@@ -683,12 +701,25 @@ const LegalConsultation = () => {
 
             <div className="legal-wrapper">
                 <div className="legal-container">
-                    {/* Header */}
-                    <h1 className="main-title">⚖️ Legal Consultation & Cyber Law Support</h1>
-                    <p className="subtitle">
-                        Get expert legal advice for serious cyber harassment cases.
-                        All consultations are confidential and legally privileged.
-                    </p>
+                    {/* Hero Section with Image Side by Side */}
+                    <div className="hero-section">
+                        <div className="hero-content">
+                            <h1>⚖️ Legal Consultation<br />& Cyber Law Support</h1>
+                            <p className="subtitle">
+                                Get expert legal advice for serious cyber harassment cases.
+                                All consultations are confidential and legally privileged.
+                                Our specialists handle women's cyber crime cases with priority.
+                            </p>
+                            <button
+                                className="request-btn"
+                                onClick={() => setShowModal(true)}
+                                style={{ background: '#1e1e1e', color: '#ffffff', width: 'auto', alignSelf: 'flex-start' }}
+                            >
+                                Request Free Consultation →
+                            </button>
+                        </div>
+                        <div className="hero-image"></div>
+                    </div>
 
                     {/* Important Notice */}
                     <div className="notice-box">
@@ -767,7 +798,7 @@ const LegalConsultation = () => {
                     {/* Lawyers Grid */}
                     <h2 className="section-header">👩‍⚖️ Our Legal Experts</h2>
                     <div className="lawyer-grid">
-                        {lawyers.map((lawyer, index) => (
+                        {lawyersList.map((lawyer, index) => (
                             <div key={index} className="lawyer-card">
                                 <div className="lawyer-name">{lawyer.name}</div>
                                 <div className="lawyer-specialization">{lawyer.specialization}</div>
@@ -776,6 +807,7 @@ const LegalConsultation = () => {
                                     className="consult-btn"
                                     onClick={() => {
                                         setSelectedLawyer(lawyer.name);
+                                        setSelectedLawyerId(lawyer.id);
                                         setShowModal(true);
                                     }}
                                 >
@@ -815,7 +847,7 @@ const LegalConsultation = () => {
                                             {c.status || "Pending"}
                                         </span>
                                         {c.status !== "Pending" && (
-                                            <button 
+                                            <button
                                                 onClick={() => generateFakePDF(c)}
                                                 style={{ padding: "6px 12px", background: "#f3f4f6", border: "1px solid #d1d5db", borderRadius: "6px", fontSize: "12px", cursor: "pointer" }}
                                             >

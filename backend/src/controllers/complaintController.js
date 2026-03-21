@@ -1,4 +1,5 @@
 const EscalationReport = require("../models/EscalationReport");
+const Case = require("../models/Case");
 const PDFDocument = require("pdfkit");
 const fs = require("fs");
 const path = require("path");
@@ -21,12 +22,23 @@ const mapLegalSections = (category) => {
 
 exports.generateComplaint = async (req, res) => {
     try {
-        const data = req.body;
+        let data = req.body;
 
-        // ===== Generate Case Number =====
-        const caseNumber = `RK-${new Date().getFullYear()}-${Math.floor(
-            1000 + Math.random() * 9000
-        )}`;
+        let caseNumber = `RK-${new Date().getFullYear()}-${Math.floor(1000 + Math.random() * 9000)}`;
+
+        let dbCase = null;
+        if (data.caseId) {
+            dbCase = await Case.findById(data.caseId);
+            if (dbCase) {
+                caseNumber = dbCase.caseNumber;
+                data.category = dbCase.title || data.category || "Cyber Incident";
+                data.description = dbCase.description || data.description || "N/A";
+                data.incidentDate = dbCase.incidentDate || data.incidentDate || new Date().toLocaleDateString();
+                data.incidentTime = dbCase.incidentTime || data.incidentTime || "N/A";
+                data.location = dbCase.platform || data.location || "N/A";
+                data.name = dbCase.victim?.name || data.name || "N/A";
+            }
+        }
 
         // ===== Ensure Upload Directory Exists =====
         const uploadDir = path.join(__dirname, "../../uploads");
@@ -38,7 +50,16 @@ exports.generateComplaint = async (req, res) => {
         const filePath = path.join(uploadDir, fileName);
 
         // ===== Process Evidence Files =====
-        const evidenceList = [];
+        let evidenceList = [];
+
+        if (dbCase && dbCase.evidence && dbCase.evidence.length > 0) {
+            evidenceList.push(...dbCase.evidence.map(e => ({
+                fileName: e.fileName,
+                storedName: e.storedName,
+                hash: e.hash,
+                size: e.size
+            })));
+        }
 
         if (req.files && req.files.length > 0) {
             req.files.forEach((file) => {
