@@ -68,12 +68,12 @@ Analytics → Aggregation queries
 
 backend/
 ├── scripts/
-│ seedData.js
+│ └── seedData.js
 │
 ├── src/
 │ ├── config/
-│ │ db.js
-│
+│ │ └── db.js
+│ │
 │ ├── controllers/
 │ │ adminController.js
 │ │ analyticsController.js
@@ -88,12 +88,12 @@ backend/
 │ │ notificationController.js
 │ │ resourceController.js
 │ │ therapyController.js
-│
+│ │
 │ ├── middleware/
 │ │ authMiddleware.js
 │ │ roleMiddleware.js
 │ │ upload.js
-│
+│ │
 │ ├── models/
 │ │ Appointment.js
 │ │ AuditLog.js
@@ -110,7 +110,7 @@ backend/
 │ │ SystemLog.js
 │ │ User.js
 │ │ WorkflowLog.js
-│
+│ │
 │ ├── routes/
 │ │ adminRoutes.js
 │ │ analyticsRoutes.js
@@ -125,7 +125,7 @@ backend/
 │ │ notificationRoutes.js
 │ │ resourceRoutes.js
 │ │ therapyRoutes.js
-│
+│ │
 │ ├── services/
 │ │ auditService.js
 │ │ emailService.js
@@ -135,14 +135,12 @@ backend/
 │ │ toxicityModel.js
 │ │ workflowEngine.js
 │ │ workflowService.js
-│
+│ │
 │ ├── utils/
 │ │ generateTokens.js
 │ │ logger.js
-│
+│ │
 │ └── app.js
-
-
 ---
 
 ## Frontend Structure
@@ -201,7 +199,6 @@ frontend/
 │
 │ ├── App.tsx
 │ ├── main.tsx
-
 
 ---
 
