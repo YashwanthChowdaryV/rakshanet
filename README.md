@@ -146,7 +146,8 @@ backend/
 
 ## Frontend Structure
 
-```
+---
+
 frontend/
 ├── src/
 │
