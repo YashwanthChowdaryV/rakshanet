@@ -65,6 +65,7 @@ Analytics → Aggregation queries
 
 ## Backend Structure
 
+```
 
 backend/
 ├── scripts/
@@ -145,7 +146,7 @@ backend/
 
 ## Frontend Structure
 
-
+```
 frontend/
 ├── src/
 │
